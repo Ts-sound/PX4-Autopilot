@@ -1,0 +1,2303 @@
+diff --git a/.ci/Jenkinsfile-compile b/.ci/Jenkinsfile-compile
+index 2936194886..1b0d73eb4b 100644
+--- a/.ci/Jenkinsfile-compile
++++ b/.ci/Jenkinsfile-compile
+@@ -16,7 +16,7 @@ pipeline {
+           ]
+ 
+           def armhf_builds = [
+-            target: ["beaglebone_blue_default", "emlid_navio2_default", "px4_raspberrypi_default", "scumaker_pilotpi_default"],
++            target: ["beaglebone_blue_default", "emlid_navio2_default", "px4_raspberrypi_default", "px4_t113_default", "scumaker_pilotpi_default"],
+             image: docker_images.armhf,
+             archive: false
+           ]
+diff --git a/.github/workflows/compile_linux.yml b/.github/workflows/compile_linux.yml
+index d14b533475..f3ab3bd2c4 100644
+--- a/.github/workflows/compile_linux.yml
++++ b/.github/workflows/compile_linux.yml
+@@ -18,6 +18,7 @@ jobs:
+           beaglebone_blue_default,
+           emlid_navio2_default,
+           px4_raspberrypi_default,
++          px4_t113_default,
+           scumaker_pilotpi_default,
+           ]
+     steps:
+diff --git a/boards/px4/t113/cmake/upload.cmake b/boards/px4/t113/cmake/upload.cmake
+new file mode 100644
+index 0000000000..8b2e165b90
+--- /dev/null
++++ b/boards/px4/t113/cmake/upload.cmake
+@@ -0,0 +1,49 @@
++############################################################################
++#
++#   Copyright (c) 2020 PX4 Development Team. All rights reserved.
++#
++# Redistribution and use in source and binary forms, with or without
++# modification, are permitted provided that the following conditions
++# are met:
++#
++# 1. Redistributions of source code must retain the above copyright
++#    notice, this list of conditions and the following disclaimer.
++# 2. Redistributions in binary form must reproduce the above copyright
++#    notice, this list of conditions and the following disclaimer in
++#    the documentation and/or other materials provided with the
++#    distribution.
++# 3. Neither the name PX4 nor the names of its contributors may be
++#    used to endorse or promote products derived from this software
++#    without specific prior written permission.
++#
++# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
++# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
++# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
++# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
++# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
++# OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
++# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
++# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++# POSSIBILITY OF SUCH DAMAGE.
++#
++############################################################################
++
++if(DEFINED ENV{AUTOPILOT_HOST})
++	set(AUTOPILOT_HOST $ENV{AUTOPILOT_HOST})
++else()
++	set(AUTOPILOT_HOST "10.10.10.55")
++endif()
++
++add_custom_target(upload
++	COMMAND rsync -arh --progress -e "ssh -o StrictHostKeyChecking=no"
++			${CMAKE_RUNTIME_OUTPUT_DIRECTORY} ${PX4_BOARD_DIR}/init/* ${PX4_SOURCE_DIR}/posix-configs/t113/*.config ${PX4_BINARY_DIR}/etc # source
++			root@${AUTOPILOT_HOST}:/root/px4/ # destination
++	# COMMAND cp 	${CMAKE_RUNTIME_OUTPUT_DIRECTORY} ${PX4_BOARD_DIR}/init/* ${PX4_SOURCE_DIR}/posix-configs/t113/*.config ${PX4_BINARY_DIR}/etc
++	# 		/home/guanglun/workspace/t113-5/Tina-t113-pro/package/add-rootfs-demo/px4/ -rf
++	DEPENDS px4
++	COMMENT "uploading px4"
++	USES_TERMINAL
++)
+diff --git a/boards/px4/t113/default.px4board b/boards/px4/t113/default.px4board
+new file mode 100644
+index 0000000000..fed229251e
+--- /dev/null
++++ b/boards/px4/t113/default.px4board
+@@ -0,0 +1,55 @@
++CONFIG_PLATFORM_POSIX=y
++CONFIG_BOARD_LINUX_TARGET=y
++CONFIG_BOARD_TOOLCHAIN="arm-none-linux-gnueabihf"
++CONFIG_BOARD_ARCHITECTURE="cortex-a7"
++CONFIG_BOARD_SERIAL_RC="/dev/ttyS3"
++CONFIG_BOARD_TESTING=y
++CONFIG_DRIVERS_GPS=y
++CONFIG_DRIVERS_OPTICAL_FLOW_PMW3901=y
++CONFIG_DRIVERS_IMU_BOSCH_BMI088=y
++CONFIG_DRIVERS_BAROMETER_BMP388=y
++CONFIG_DRIVERS_MAGNETOMETER_ISENTEK_IST8310=y
++CONFIG_DRIVERS_AUXIO=y
++CONFIG_DRIVERS_RC_INPUT=y
++CONFIG_MODULES_ATTITUDE_ESTIMATOR_Q=y
++CONFIG_MODULES_BATTERY_STATUS=y
++CONFIG_MODULES_COMMANDER=y
++CONFIG_MODULES_CONTROL_ALLOCATOR=y
++CONFIG_MODULES_DATAMAN=y
++CONFIG_MODULES_EKF2=y
++CONFIG_MODULES_EVENTS=y
++CONFIG_MODULES_FLIGHT_MODE_MANAGER=y
++CONFIG_MODULES_GIMBAL=y
++CONFIG_MODULES_GYRO_CALIBRATION=y
++CONFIG_MODULES_GYRO_FFT=y
++CONFIG_MODULES_LAND_DETECTOR=y
++CONFIG_MODULES_LANDING_TARGET_ESTIMATOR=y
++CONFIG_MODULES_LOAD_MON=y
++CONFIG_MODULES_LOCAL_POSITION_ESTIMATOR=y
++CONFIG_MODULES_LOGGER=y
++CONFIG_MODULES_MAG_BIAS_ESTIMATOR=y
++CONFIG_MODULES_MANUAL_CONTROL=y
++CONFIG_MODULES_MAVLINK=y
++CONFIG_MODULES_MC_ATT_CONTROL=y
++CONFIG_MODULES_MC_AUTOTUNE_ATTITUDE_CONTROL=y
++CONFIG_MODULES_MC_HOVER_THRUST_ESTIMATOR=y
++CONFIG_MODULES_MC_POS_CONTROL=y
++CONFIG_MODULES_MC_RATE_CONTROL=y
++CONFIG_MODULES_NAVIGATOR=y
++CONFIG_MODULES_RC_UPDATE=y
++CONFIG_MODULES_SENSORS=y
++CONFIG_MODULES_TEMPERATURE_COMPENSATION=y
++CONFIG_SYSTEMCMDS_BSONDUMP=y
++CONFIG_SYSTEMCMDS_DYN=y
++CONFIG_SYSTEMCMDS_LED_CONTROL=y
++CONFIG_SYSTEMCMDS_PARAM=y
++CONFIG_SYSTEMCMDS_PERF=y
++CONFIG_SYSTEMCMDS_SD_BENCH=y
++CONFIG_SYSTEMCMDS_SHUTDOWN=y
++CONFIG_SYSTEMCMDS_SYSTEM_TIME=y
++CONFIG_SYSTEMCMDS_TOP=y
++CONFIG_SYSTEMCMDS_TOPIC_LISTENER=y
++CONFIG_SYSTEMCMDS_TUNE_CONTROL=y
++CONFIG_SYSTEMCMDS_UORB=y
++CONFIG_SYSTEMCMDS_VER=y
++CONFIG_SYSTEMCMDS_WORK_QUEUE=y
+diff --git a/boards/px4/t113/init/run.sh b/boards/px4/t113/init/run.sh
+new file mode 100755
+index 0000000000..aa6620dc09
+--- /dev/null
++++ b/boards/px4/t113/init/run.sh
+@@ -0,0 +1 @@
++./bin/px4 -s px4_mc.config
+diff --git a/boards/px4/t113/init/run_core.sh b/boards/px4/t113/init/run_core.sh
+new file mode 100755
+index 0000000000..d887be51de
+--- /dev/null
++++ b/boards/px4/t113/init/run_core.sh
+@@ -0,0 +1,5 @@
++taskset -c 1 ./bin/px4 -s px4_mc.config
++
++
++# echo "Launching PX4"
++# cd /root/px4 ; nohup taskset -c 1 ./bin/px4 -d -s px4_mc.config 2 &> 1 > /root/px4/px4.log &
+diff --git a/boards/px4/t113/src/CMakeLists.txt b/boards/px4/t113/src/CMakeLists.txt
+new file mode 100644
+index 0000000000..e3ddbe4dd7
+--- /dev/null
++++ b/boards/px4/t113/src/CMakeLists.txt
+@@ -0,0 +1,38 @@
++############################################################################
++#
++#   Copyright (c) 2017 PX4 Development Team. All rights reserved.
++#
++# Redistribution and use in source and binary forms, with or without
++# modification, are permitted provided that the following conditions
++# are met:
++#
++# 1. Redistributions of source code must retain the above copyright
++#    notice, this list of conditions and the following disclaimer.
++# 2. Redistributions in binary form must reproduce the above copyright
++#    notice, this list of conditions and the following disclaimer in
++#    the documentation and/or other materials provided with the
++#    distribution.
++# 3. Neither the name PX4 nor the names of its contributors may be
++#    used to endorse or promote products derived from this software
++#    without specific prior written permission.
++#
++# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
++# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
++# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
++# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
++# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
++# OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
++# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
++# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++# POSSIBILITY OF SUCH DAMAGE.
++#
++############################################################################
++
++add_library(drivers_board
++	board_pwm_out.cpp
++	i2c.cpp
++	spi.cpp
++)
+diff --git a/boards/px4/t113/src/board_config.h b/boards/px4/t113/src/board_config.h
+new file mode 100644
+index 0000000000..5ef6f930a4
+--- /dev/null
++++ b/boards/px4/t113/src/board_config.h
+@@ -0,0 +1,66 @@
++/****************************************************************************
++ *
++ *   Copyright (c) 2017 PX4 Development Team. All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in
++ *    the documentation and/or other materials provided with the
++ *    distribution.
++ * 3. Neither the name PX4 nor the names of its contributors may be
++ *    used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
++ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
++ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
++ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
++ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
++ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
++ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
++ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
++ *
++ ****************************************************************************/
++
++/**
++ * @file board_config.h
++ *
++ * RPI internal definitions
++ */
++
++#pragma once
++
++#define BOARD_OVERRIDE_UUID "RPIID00000000000" // must be of length 16
++#define PX4_SOC_ARCH_ID     PX4_SOC_ARCH_ID_RPI
++
++#define BOARD_HAS_CONTROL_STATUS_LEDS 1
++#define BOARD_OVERLOAD_LED     LED_RED
++#define BOARD_ARMED_LED        LED_BLUE
++#define BOARD_ARMED_STATE_LED  LED_GREEN
++
++// I2C
++#define CONFIG_I2C 1
++#define PX4_NUMBER_I2C_BUSES    4
++
++
++// SPI
++#define CONFIG_SPI 1
++#define PX4_NUMBER_SPI_BUSES    2
++
++#define ADC_BATTERY_VOLTAGE_CHANNEL	0
++#define ADC_BATTERY_CURRENT_CHANNEL	-1
++#define ADC_AIRSPEED_VOLTAGE_CHANNEL 2
++
++#define ADC_DP_V_DIV 1.0f
++
++#include <system_config.h>
++#include <px4_platform_common/board_common.h>
+diff --git a/boards/px4/t113/src/board_pwm_out.cpp b/boards/px4/t113/src/board_pwm_out.cpp
+new file mode 100644
+index 0000000000..fc18bf9618
+--- /dev/null
++++ b/boards/px4/t113/src/board_pwm_out.cpp
+@@ -0,0 +1,216 @@
++/****************************************************************************
++ *
++ *   Copyright (c) 2017 PX4 Development Team. All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in
++ *    the documentation and/or other materials provided with the
++ *    distribution.
++ * 3. Neither the name PX4 nor the names of its contributors may be
++ *    used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
++ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
++ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
++ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
++ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
++ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
++ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
++ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
++ *
++ ****************************************************************************/
++#ifndef MODULE_NAME
++#define MODULE_NAME "navio_sysfs_pwm_out"
++#endif
++
++#include "board_pwm_out.h"
++
++#include <fcntl.h>
++#include <errno.h>
++#include <unistd.h>
++#include <px4_platform_common/log.h>
++
++#include <time.h>
++#include <unistd.h>
++#include <string.h>
++#include <sys/mman.h>
++#include <sys/ioctl.h>
++
++using namespace pwm_out;
++
++const char NavioSysfsPWMOut::_device[] = "/sys/class/pwm/pwmchip0";
++
++volatile unsigned int *PWM_BASE_MAP;
++
++#define PPR(ch) (PWM_BASE_MAP + (0x0C00 + 0x0104 + 0x20 * ch) / 4)
++#define PWM_BASE_REL (0x02000C00)
++#define PWM_BASE     (PWM_BASE_REL/0x1000*0x1000)
++
++NavioSysfsPWMOut::NavioSysfsPWMOut(int max_num_outputs)
++{
++	if (max_num_outputs > MAX_NUM_PWM) {
++		//PX4_WARN("number of outputs too large %i. Setting to %i",max_num_outputs, MAX_NUM_PWM);
++		max_num_outputs = MAX_NUM_PWM;
++	}
++
++	for (int i = 0; i < MAX_NUM_PWM; ++i) {
++		_pwm_fd[i] = -1;
++	}
++
++	_pwm_num = max_num_outputs;
++}
++
++NavioSysfsPWMOut::~NavioSysfsPWMOut()
++{
++	for (int i = 0; i < MAX_NUM_PWM; ++i) {
++		if (_pwm_fd[i] != -1) {
++			::close(_pwm_fd[i]);
++		}
++	}
++}
++
++int NavioSysfsPWMOut::init()
++{
++	int i;
++	char path[128];
++
++	int mm_fd = open("/dev/mem", O_RDWR | O_SYNC);
++	if (mm_fd < 0){
++		PX4_ERR("PWM open(/dev/mem) failed.");
++		return -1;
++	}
++
++	PWM_BASE_MAP = (volatile unsigned int * )mmap(0, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, mm_fd, PWM_BASE);
++
++	if(PWM_BASE_MAP == MAP_FAILED)
++	{
++		PX4_ERR("PWM mmap fail.");
++		return -1;
++	}
++
++	for (i = 0; i < _pwm_num; ++i) {
++		::snprintf(path, sizeof(path), "%s/export", _device);
++
++		if (pwm_write_sysfs(path, pwm_pin_map[i]) < 0) {
++			PX4_ERR("PWM export failed");
++		}
++	}
++
++	for (i = 0; i < _pwm_num; ++i) {
++		::snprintf(path, sizeof(path), "%s/pwm%u/period", _device, pwm_pin_map[i]);
++
++		if (pwm_write_sysfs(path, (int)2500000)) { //400Hz
++			PX4_ERR("PWM set period failed");
++		}
++
++	}
++
++	for (i = 0; i < _pwm_num; ++i) {
++		::snprintf(path, sizeof(path), "%s/pwm%u/duty_cycle", _device, pwm_pin_map[i]);
++
++		if (pwm_write_sysfs(path, (int)900)) { //900us
++			PX4_ERR("PWM set duty_cycle failed");
++		}
++
++	}
++
++	for (i = 0; i < _pwm_num; ++i) {
++		::snprintf(path, sizeof(path), "%s/pwm%u/polarity", _device, pwm_pin_map[i]);
++
++		if (pwm_write_sysfs_string(path, (char *)"normal")) { //400Hz
++			PX4_ERR("PWM set polarity failed");
++		}
++
++	}
++
++	for (i = 0; i < _pwm_num; ++i) {
++		::snprintf(path, sizeof(path), "%s/pwm%u/enable", _device, pwm_pin_map[i]);
++
++		if (pwm_write_sysfs(path, 1) < 0) {
++			PX4_ERR("PWM enable failed");
++		}
++	}
++
++	return 0;
++}
++
++#define SDATA_SIZE 10
++
++int NavioSysfsPWMOut::send_output_pwm(const uint16_t *pwm, int num_outputs)
++{
++
++	if (num_outputs > _pwm_num) {
++		num_outputs = _pwm_num;
++	}
++
++	int ret = 0;
++	__uint32_t ppr[4];
++	//convert this to duty_cycle in ns
++	for (int i = 0; i < num_outputs; ++i) {
++		ppr[i] = (__uint32_t)((60000<<16)|(60000*pwm[i]/2500));
++	}
++
++
++	for (int i = 0; i < num_outputs; ++i) {
++		*PPR(pwm_pin_map[i]) = ppr[i];
++	}
++
++
++	// PX4_INFO("PWM: %d %d %d %d", pwm[0], pwm[1], pwm[2], pwm[3]);
++
++	return ret;
++}
++
++int NavioSysfsPWMOut::pwm_write_sysfs(char *path, int value)
++{
++	int fd = ::open(path, O_WRONLY | O_CLOEXEC);
++	int n;
++	char data[16];
++
++	if (fd == -1) {
++		return -errno;
++	}
++
++	n = ::snprintf(data, sizeof(data), "%u", value);
++
++	if (n > 0) {
++		n = ::write(fd, data, n);	// This n is not used, but to avoid a compiler error.
++	}
++
++	::close(fd);
++
++	return 0;
++}
++
++int NavioSysfsPWMOut::pwm_write_sysfs_string(char *path, char *str)
++{
++	int fd = ::open(path, O_WRONLY | O_CLOEXEC);
++	int n;
++	char data[16];
++
++	if (fd == -1) {
++		return -errno;
++	}
++
++	n = ::snprintf(data, sizeof(data), "%s", str);
++
++	if (n > 0) {
++		n = ::write(fd, data, n);	// This n is not used, but to avoid a compiler error.
++	}
++
++	::close(fd);
++
++	return 0;
++}
++
+diff --git a/boards/px4/t113/src/board_pwm_out.h b/boards/px4/t113/src/board_pwm_out.h
+new file mode 100644
+index 0000000000..b32667612e
+--- /dev/null
++++ b/boards/px4/t113/src/board_pwm_out.h
+@@ -0,0 +1,70 @@
++/****************************************************************************
++ *
++ *   Copyright (c) 2017 PX4 Development Team. All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in
++ *    the documentation and/or other materials provided with the
++ *    distribution.
++ * 3. Neither the name PX4 nor the names of its contributors may be
++ *    used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
++ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
++ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
++ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
++ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
++ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
++ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
++ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
++ *
++ ****************************************************************************/
++
++#pragma once
++
++#include <px4_platform/pwm_out_base.h>
++
++#define BOARD_PWM_OUT_IMPL NavioSysfsPWMOut
++
++namespace pwm_out
++{
++
++/**
++ ** class NavioSysfsPWMOut
++ * PWM output class for Navio Sysfs
++ */
++class NavioSysfsPWMOut : public PWMOutBase
++{
++public:
++	NavioSysfsPWMOut(int max_num_outputs);
++	virtual ~NavioSysfsPWMOut();
++
++	int init() override;
++
++	int send_output_pwm(const uint16_t *pwm, int num_outputs) override;
++
++private:
++	int pwm_write_sysfs(char *path, int value);
++	int pwm_write_sysfs_string(char *path, char *str);
++
++	static const int MAX_NUM_PWM = 4;
++	static const int FREQUENCY_PWM = 400;
++	int pwm_pin_map[4] = {1,2,3,0};
++	int _pwm_fd[MAX_NUM_PWM];
++	int _pwm_num;
++
++	static const char _device[];
++};
++
++}
+diff --git a/boards/px4/t113/src/i2c.cpp b/boards/px4/t113/src/i2c.cpp
+new file mode 100644
+index 0000000000..20c161ab9b
+--- /dev/null
++++ b/boards/px4/t113/src/i2c.cpp
+@@ -0,0 +1,40 @@
++/****************************************************************************
++ *
++ *   Copyright (C) 2020 PX4 Development Team. All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in
++ *    the documentation and/or other materials provided with the
++ *    distribution.
++ * 3. Neither the name PX4 nor the names of its contributors may be
++ *    used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
++ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
++ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
++ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
++ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
++ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
++ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
++ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
++ *
++ ****************************************************************************/
++
++#include <px4_arch/i2c_hw_description.h>
++
++constexpr px4_i2c_bus_t px4_i2c_buses[I2C_BUS_MAX_BUS_ITEMS] = {
++	initI2CBusInternal(2),
++	initI2CBusExternal(0),
++	initI2CBusExternal(1)
++};
+diff --git a/boards/px4/t113/src/spi.cpp b/boards/px4/t113/src/spi.cpp
+new file mode 100644
+index 0000000000..9c7863918c
+--- /dev/null
++++ b/boards/px4/t113/src/spi.cpp
+@@ -0,0 +1,42 @@
++/****************************************************************************
++ *
++ *   Copyright (C) 2020 PX4 Development Team. All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in
++ *    the documentation and/or other materials provided with the
++ *    distribution.
++ * 3. Neither the name PX4 nor the names of its contributors may be
++ *    used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
++ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
++ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
++ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
++ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
++ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
++ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
++ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
++ *
++ ****************************************************************************/
++
++#include <px4_arch/spi_hw_description.h>
++#include <drivers/drv_sensor.h>
++
++constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
++	initSPIBus(1, {
++		initSPIDevice(DRV_ACC_DEVTYPE_BMI088,  0),
++		initSPIDevice(DRV_GYR_DEVTYPE_BMI088,  1),
++	}),
++};
+diff --git a/platforms/posix/cmake/Toolchain-arm-none-linux-gnueabihf.cmake b/platforms/posix/cmake/Toolchain-arm-none-linux-gnueabihf.cmake
+new file mode 100644
+index 0000000000..03baa7b6d4
+--- /dev/null
++++ b/platforms/posix/cmake/Toolchain-arm-none-linux-gnueabihf.cmake
+@@ -0,0 +1,42 @@
++# arm-openwrt-linux-gcc toolchain
++
++set(CMAKE_SYSTEM_NAME Linux)
++set(CMAKE_SYSTEM_PROCESSOR arm)
++set(CMAKE_SYSTEM_VERSION 1)
++
++set(triple arm-none-linux-gnueabihf)
++set(CMAKE_LIBRARY_ARCHITECTURE ${triple})
++set(TOOLCHAIN_PREFIX ${triple})
++
++set(CMAKE_C_COMPILER ${TOOLCHAIN_PREFIX}-gcc)
++set(CMAKE_C_COMPILER_TARGET ${triple})
++
++set(CMAKE_CXX_COMPILER ${TOOLCHAIN_PREFIX}-g++)
++set(CMAKE_CXX_COMPILER_TARGET ${triple})
++
++set(CMAKE_ASM_COMPILER ${TOOLCHAIN_PREFIX}-gcc)
++
++# compiler tools
++find_program(CMAKE_AR ${TOOLCHAIN_PREFIX}-gcc-ar)
++find_program(CMAKE_GDB ${TOOLCHAIN_PREFIX}-gdb)
++find_program(CMAKE_LD ${TOOLCHAIN_PREFIX}-ld)
++find_program(CMAKE_LINKER ${TOOLCHAIN_PREFIX}-ld)
++find_program(CMAKE_NM ${TOOLCHAIN_PREFIX}-gcc-nm)
++find_program(CMAKE_OBJCOPY ${TOOLCHAIN_PREFIX}-objcopy)
++find_program(CMAKE_OBJDUMP ${TOOLCHAIN_PREFIX}-objdump)
++find_program(CMAKE_RANLIB ${TOOLCHAIN_PREFIX}-gcc-ranlib)
++find_program(CMAKE_STRIP ${TOOLCHAIN_PREFIX}-strip)
++
++set(CMAKE_FIND_ROOT_PATH get_file_component(${CMAKE_C_COMPILER} PATH))
++set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
++set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
++set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
++
++# os tools
++foreach(tool grep make)
++	string(TOUPPER ${tool} TOOL)
++	find_program(${TOOL} ${tool})
++	if(NOT ${TOOL})
++		message(FATAL_ERROR "could not find ${tool}")
++	endif()
++endforeach()
+diff --git a/posix-configs/t113/pilotpi_fw.config b/posix-configs/t113/pilotpi_fw.config
+new file mode 100644
+index 0000000000..a4fdf0f6fd
+--- /dev/null
++++ b/posix-configs/t113/pilotpi_fw.config
+@@ -0,0 +1,75 @@
++#!/bin/sh
++# PX4 commands need the 'px4-' prefix in bash.
++# (px4-alias.sh is expected to be in the PATH)
++. px4-alias.sh
++
++param select parameters.bson
++param import
++
++# system_power not implemented
++param set CBRK_SUPPLY_CHK 894281
++
++param set-default BAT1_V_DIV 5.7
++
++# broadcast to LAN
++# always keep current config
++param set SYS_AUTOCONFIG 0
++# useless but required for parameter completeness
++param set MAV_TYPE 1
++param set SYS_AUTOSTART 2100
++
++dataman start
++
++load_mon start
++
++battery_status start
++
++# internal IMU
++if ! icm42688p start -q -s -R 4
++then
++	# some boards has ICM42605 instead
++	icm42605 start -s -R 4
++fi
++if ! ist8310 start -q -I -a 15 -R 4
++then
++	# some boards has QMC5883l instead
++	qmc5883l start -I -R 6
++fi
++ms5611 start -I
++
++# ADC
++ads1115 start -I
++
++# PWM
++pca9685_pwm_out start
++control_allocator start
++
++# external GPS & compass
++gps start -d /dev/ttySC0 -i uart -p ubx -s
++#hmc5883 start -X
++#ist8310 start -X
++
++# Airspeed
++ms4525do start -X
++
++rc_input start -d /dev/ttyAMA0
++
++rc_update start
++sensors start
++commander start
++navigator start
++ekf2 start
++airspeed_selector start
++land_detector start fixedwing
++flight_mode_manager start
++fw_att_control start
++fw_pos_control start
++
++mavlink start -x -u 14556 -r 1000000 -p
++
++# Telem
++mavlink start -x -Z -d /dev/ttySC1
++
++logger start -t -b 200
++
++mavlink boot_complete
+diff --git a/posix-configs/t113/pilotpi_mc.config b/posix-configs/t113/pilotpi_mc.config
+new file mode 100644
+index 0000000000..9c037597c7
+--- /dev/null
++++ b/posix-configs/t113/pilotpi_mc.config
+@@ -0,0 +1,73 @@
++#!/bin/sh
++# PX4 commands need the 'px4-' prefix in bash.
++# (px4-alias.sh is expected to be in the PATH)
++. px4-alias.sh
++
++param select parameters.bson
++param import
++
++# system_power not implemented
++param set CBRK_SUPPLY_CHK 894281
++
++param set-default BAT1_V_DIV 5.7
++
++# broadcast to LAN
++# always keep current config
++param set SYS_AUTOCONFIG 0
++# useless but required for parameter completeness
++param set MAV_TYPE 2
++param set SYS_AUTOSTART 4001
++
++dataman start
++
++load_mon start
++
++battery_status start
++
++# internal IMU
++if ! icm42688p start -q -s -R 4
++then
++	# some boards has ICM42605 instead
++	icm42605 start -s -R 4
++fi
++if ! ist8310 start -q -I -a 15 -R 4
++then
++	# some boards has QMC5883l instead
++	qmc5883l start -I -R 6
++fi
++ms5611 start -I
++
++# ADC
++ads1115 start -I
++
++# PWM
++pca9685_pwm_out start
++control_allocator start
++
++# external GPS & compass
++gps start -d /dev/ttySC0 -i uart -p ubx -s
++#hmc5883 start -X
++#ist8310 start -X
++
++rc_input start -d /dev/ttyAMA0
++
++rc_update start
++sensors start
++commander start
++navigator start
++ekf2 start
++land_detector start multicopter
++mc_hover_thrust_estimator start
++flight_mode_manager start
++mc_pos_control start
++mc_att_control start
++mc_rate_control start
++
++mavlink start -x -u 14556 -r 1000000 -p
++
++# Telem
++mavlink start -x -Z -d /dev/ttySC1
++
++logger start -t -b 200
++
++mavlink boot_complete
+diff --git a/posix-configs/t113/px4.config b/posix-configs/t113/px4.config
+new file mode 100644
+index 0000000000..3937452583
+--- /dev/null
++++ b/posix-configs/t113/px4.config
+@@ -0,0 +1,64 @@
++#!/bin/sh
++# PX4 commands need the 'px4-' prefix in bash.
++# (px4-alias.sh is expected to be in the PATH)
++. px4-alias.sh
++
++# navio config for a quad
++
++param select parameters.bson
++param import
++
++param set BAT1_V_DIV 10.177939394
++param set BAT1_A_PER_V 15.391030303
++param set CBRK_SUPPLY_CHK 894281
++param set SYS_AUTOSTART 4001
++param set MAV_TYPE 2
++
++# Multi-EKF
++param set EKF2_MULTI_IMU 2
++param set SENS_IMU_MODE 0
++
++dataman start
++
++load_mon start
++
++mpu9250 -s -R 2 start
++lsm9ds1 -s -R 4 start
++lsm9ds1_mag -s -R 4 start
++ms5611 -X start
++
++navio_rgbled start
++
++board_adc start
++battery_status start
++
++gps start -d /dev/spidev0.0 -i spi -p ubx
++rc_update start
++sensors start
++commander start
++navigator start
++ekf2 start
++land_detector start multicopter
++mc_hover_thrust_estimator start
++flight_mode_manager start
++mc_pos_control start
++mc_att_control start
++mc_rate_control start
++
++mavlink start -x -u 14556 -r 1000000 -p
++
++if [ -c /dev/ttyUSB0 ]
++then
++	mavlink start -x -d /dev/ttyUSB0
++elif [ -c /dev/ttyAMA0 ]
++then
++	mavlink start -x -d /dev/ttyAMA0
++fi
++
++navio_sysfs_rc_in start
++linux_pwm_out start
++control_allocator start
++
++logger start -t -b 200
++
++mavlink boot_complete
+diff --git a/posix-configs/t113/px4_fw.config b/posix-configs/t113/px4_fw.config
+new file mode 100644
+index 0000000000..55d8d9cfd9
+--- /dev/null
++++ b/posix-configs/t113/px4_fw.config
+@@ -0,0 +1,62 @@
++#!/bin/sh
++# PX4 commands need the 'px4-' prefix in bash.
++# (px4-alias.sh is expected to be in the PATH)
++. px4-alias.sh
++
++# navio config for FW
++
++param select parameters.bson
++param import
++
++param set BAT1_V_DIV 10.177939394
++param set BAT1_A_PER_V 15.391030303
++param set CBRK_SUPPLY_CHK 894281
++param set SYS_AUTOSTART 2100
++param set MAV_TYPE 1
++
++# Multi-EKF
++param set EKF2_MULTI_IMU 2
++param set SENS_IMU_MODE 0
++
++dataman start
++
++load_mon start
++
++mpu9250 -s -R 2 start
++lsm9ds1 -s -R 4 start
++lsm9ds1_mag -s -R 4 start
++ms5611 -X start
++
++navio_rgbled start
++
++board_adc start
++battery_status start
++
++gps start -d /dev/spidev0.0 -i spi -p ubx
++ms4525do start -X
++rc_update start
++sensors start
++commander start
++navigator start
++ekf2 start
++land_detector start fixedwing
++fw_att_control start
++fw_pos_control start
++
++mavlink start -x -u 14556 -r 1000000 -p
++
++if [ -c /dev/ttyUSB0 ]
++then
++	mavlink start -x -d /dev/ttyUSB0
++elif [ -c /dev/ttyAMA0 ]
++then
++	mavlink start -x -d /dev/ttyAMA0
++fi
++
++navio_sysfs_rc_in start
++linux_pwm_out start
++control_allocator start
++
++logger start -t -b 200
++
++mavlink boot_complete
+diff --git a/posix-configs/t113/px4_hil.config b/posix-configs/t113/px4_hil.config
+new file mode 100644
+index 0000000000..6554f52d45
+--- /dev/null
++++ b/posix-configs/t113/px4_hil.config
+@@ -0,0 +1,45 @@
++#!/bin/sh
++# PX4 commands need the 'px4-' prefix in bash.
++# (px4-alias.sh is expected to be in the PATH)
++. px4-alias.sh
++
++# HITL configuration
++# connect to it with jMAVSim:
++# ./Tools/simulation/jmavsim/jmavsim_run.sh -q -i <IP> -p 14577 -r 250
++
++param select parameters.bson
++param import
++
++param set CBRK_SUPPLY_CHK 894281
++param set SYS_AUTOSTART 1001
++param set MAV_TYPE 2
++
++# Multi-EKF
++param set EKF2_MULTI_IMU 2
++param set SENS_IMU_MODE 0
++
++dataman start
++
++load_mon start
++
++rc_update start
++sensors start -hil
++commander start -hil
++navigator start
++ekf2 start
++land_detector start multicopter
++mc_hover_thrust_estimator start
++flight_mode_manager start
++mc_pos_control start
++mc_att_control start
++mc_rate_control start
++
++mavlink start -x -u 14577 -r 1000000 -p
++navio_sysfs_rc_in start
++pwm_out_sim start
++control_allocator start
++
++logger start -t -b 200
++
++mavlink boot_complete
++
+diff --git a/posix-configs/t113/px4_mc.config b/posix-configs/t113/px4_mc.config
+new file mode 100644
+index 0000000000..9b63c58e1d
+--- /dev/null
++++ b/posix-configs/t113/px4_mc.config
+@@ -0,0 +1,110 @@
++#!/bin/sh
++# PX4 commands need the 'px4-' prefix in bash.
++# (px4-alias.sh is expected to be in the PATH)
++. px4-alias.sh
++
++param select parameters.bson
++param import
++
++param set SENS_BOARD_ROT 0
++
++param set SDLOG_MODE 0
++
++# system_power unavailable
++param set-default CBRK_SUPPLY_CHK 894281
++
++# Disable safety switch by default
++param set-default CBRK_IO_SAFETY 22027
++
++# broadcast to LAN
++# always keep current config
++param set SYS_AUTOCONFIG 0
++# useless but required for parameter completeness
++
++param set SYS_AUTOSTART 4001
++param set-default MAV_TYPE 2
++
++# param set MPC_LAND_SPEED 0.8
++# param set LNDMC_Z_VEL_MAX 0.8
++
++param set-default EKF2_MULTI_IMU 1
++param set-default SENS_IMU_MODE 0
++param set-default IMU_GYRO_RATEMAX 400
++
++. ${R}etc/init.d/rc.mc_defaults
++param set-default CA_ROTOR_COUNT 4
++param set-default CA_ROTOR0_PX 0.15
++param set-default CA_ROTOR0_PY 0.15
++param set-default CA_ROTOR1_PX -0.15
++param set-default CA_ROTOR1_PY -0.15
++param set-default CA_ROTOR2_PX 0.15
++param set-default CA_ROTOR2_PY -0.15
++param set-default CA_ROTOR2_KM -0.05
++param set-default CA_ROTOR3_PX -0.15
++param set-default CA_ROTOR3_PY 0.15
++param set-default CA_ROTOR3_KM -0.05
++
++param set PWM_MAIN_DIS1 1000
++param set PWM_MAIN_DIS2 1000
++param set PWM_MAIN_DIS3 1000
++param set PWM_MAIN_DIS4 1000
++
++param set PWM_MAIN_MIN1 1001
++param set PWM_MAIN_MIN2 1001
++param set PWM_MAIN_MIN3 1001
++param set PWM_MAIN_MIN4 1001
++
++param set PWM_MAIN_MAX1 2000
++param set PWM_MAIN_MAX2 2000
++param set PWM_MAIN_MAX3 2000
++param set PWM_MAIN_MAX4 2000
++
++dataman start
++
++load_mon start
++
++# battery_status start
++
++#ROTATION_YAW_180
++
++bmi088 -A -R 12 -s start
++bmi088 -G -R 12 -s start
++
++bmp388 -I -a 0x76 -f 400 start
++ist8310 -I -R 4 start
++
++# Optical flow
++# pmw3901 -s start
++# vl53l1x -X start
++
++rc_input start -d /dev/ttyS5
++rc_update start
++manual_control start
++sensors start
++navigator start
++ekf2 start
++land_detector start multicopter
++mc_hover_thrust_estimator start
++flight_mode_manager start
++mc_pos_control start
++mc_att_control start
++mc_rate_control start
++
++sleep 1
++
++commander start
++
++mavlink start -n wlan0 -x -u 14556 -r 1000000 -p
++#mavlink stream -u 14556 -s ATTITUDE            -r 100
++mavlink stream -u 14556 -s DISTANCE_SENSOR     -r 10
++#mavlink stream -u 14556 -s LOCAL_POSITION_NED  -r 100
++mavlink stream -u 14556 -s OPTICAL_FLOW_RAD    -r 50
++
++# mavlink start -d /dev/ttyS2 -b 115200
++# linux_pwm_out start
++control_allocator start
++auxio start
++
++#logger start -t -b 200
++
++mavlink boot_complete
+diff --git a/posix-configs/t113/px4_test.config b/posix-configs/t113/px4_test.config
+new file mode 100644
+index 0000000000..77a253157c
+--- /dev/null
++++ b/posix-configs/t113/px4_test.config
+@@ -0,0 +1,92 @@
++#!/bin/sh
++# PX4 commands need the 'px4-' prefix in bash.
++# (px4-alias.sh is expected to be in the PATH)
++. px4-alias.sh
++
++# navio config for simple testing
++
++param select parameters.bson
++param import
++
++param set CBRK_SUPPLY_CHK 894281
++param set SYS_AUTOSTART 4001
++param set MAV_TYPE 2
++
++# Multi-EKF
++param set EKF2_MULTI_IMU 2
++param set SENS_IMU_MODE 0
++
++dataman start
++
++load_mon start
++
++mpu9250 -s -R 2 start
++lsm9ds1 -s -R 4 start
++lsm9ds1_mag -s -R 4 start
++ms5611 -X start
++
++navio_rgbled start
++
++board_adc start
++battery_status start
++
++gps start -d /dev/spidev0.0 -i spi -p ubx
++rc_update start
++sensors start
++commander start
++navigator start
++ekf2 start
++land_detector start multicopter
++mc_hover_thrust_estimator start
++flight_mode_manager start
++mc_pos_control start
++mc_att_control start
++
++mavlink start -x -u 14556 -r 1000000 -p
++
++if [ -c /dev/ttyUSB0 ]
++then
++	mavlink start -x -d /dev/ttyUSB0
++elif [ -c /dev/ttyAMA0 ]
++then
++	mavlink start -x -d /dev/ttyAMA0
++fi
++
++navio_sysfs_rc_in start
++linux_pwm_out start
++control_allocator start
++
++logger start -t -f -b 200
++
++mavlink boot_complete
++
++sleep 5
++
++ver all
++sleep 1
++commander check
++sleep 1
++dataman status
++sleep 1
++ekf2 status
++sleep 1
++logger status
++sleep 1
++mavlink status
++sleep 1
++mavlink status streams
++sleep 1
++param status
++sleep 1
++sensors status
++sleep 1
++perf
++sleep 1
++perf latency
++sleep 1
++work_queue status
++sleep 1
++uorb top -1
++sleep 1
++
++shutdown
+diff --git a/src/drivers/auxio/CMakeLists.txt b/src/drivers/auxio/CMakeLists.txt
+new file mode 100644
+index 0000000000..7328760e17
+--- /dev/null
++++ b/src/drivers/auxio/CMakeLists.txt
+@@ -0,0 +1,44 @@
++############################################################################
++#
++#   Copyright (c) 2015-2016 PX4 Development Team. All rights reserved.
++#
++# Redistribution and use in source and binary forms, with or without
++# modification, are permitted provided that the following conditions
++# are met:
++#
++# 1. Redistributions of source code must retain the above copyright
++#    notice, this list of conditions and the following disclaimer.
++# 2. Redistributions in binary form must reproduce the above copyright
++#    notice, this list of conditions and the following disclaimer in
++#    the documentation and/or other materials provided with the
++#    distribution.
++# 3. Neither the name PX4 nor the names of its contributors may be
++#    used to endorse or promote products derived from this software
++#    without specific prior written permission.
++#
++# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
++# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
++# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
++# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
++# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
++# OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
++# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
++# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++# POSSIBILITY OF SUCH DAMAGE.
++#
++############################################################################
++
++px4_add_module(
++	MODULE drivers__auxio
++	MAIN auxio
++	COMPILE_FLAGS
++	SRCS
++		auxio.cpp
++	MODULE_CONFIG
++		module.yaml
++	DEPENDS
++		mixer_module
++	)
+diff --git a/src/drivers/auxio/Kconfig b/src/drivers/auxio/Kconfig
+new file mode 100644
+index 0000000000..072e326a73
+--- /dev/null
++++ b/src/drivers/auxio/Kconfig
+@@ -0,0 +1,5 @@
++menuconfig DRIVERS_AUXIO
++	bool "auxio"
++	default n
++	---help---
++		Enable support for auxio
+diff --git a/src/drivers/auxio/auxio.cpp b/src/drivers/auxio/auxio.cpp
+new file mode 100644
+index 0000000000..7932702c5b
+--- /dev/null
++++ b/src/drivers/auxio/auxio.cpp
+@@ -0,0 +1,488 @@
++/****************************************************************************
++ *
++ *   Copyright (c) 2021-2022 PX4 Development Team. All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in
++ *    the documentation and/or other materials provided with the
++ *    distribution.
++ * 3. Neither the name PX4 nor the names of its contributors may be
++ *    used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
++ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
++ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
++ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
++ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
++ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
++ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
++ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
++ *
++ ****************************************************************************/
++
++#include "auxio.hpp"
++
++#include <drivers/drv_hrt.h>
++
++#include <px4_platform_common/sem.hpp>
++
++#include <termios.h>
++
++volatile bool _task_should_exit = false;
++
++px4_task_t _task_handle = -1;
++
++int _uart_fd = 0;
++
++int task_main(int argc, char *argv[]);
++
++Battery *_battery = nullptr;
++
++G0AUX::G0AUX() :
++	OutputModuleInterface(MODULE_NAME, px4::wq_configurations::hp_default),
++	_cycle_perf(perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")),
++	_interval_perf(perf_alloc(PC_INTERVAL, MODULE_NAME": interval"))
++{
++}
++
++G0AUX::~G0AUX()
++{
++	perf_free(_cycle_perf);
++	perf_free(_interval_perf);
++
++}
++
++#define RDATA_SIZE 30
++
++static uint16_t adc[4];
++static float adcf[4];
++static float vbat=0.0f,curr=0.0f;
++static uint16_t pwm[4];
++static uint16_t pwm_count_fps,loop_count,uart_callback_count;
++static uint16_t is_connect = 0,is_connect_last = 0;
++static hrt_abstime aux_recv_update;
++
++void update_data(void)
++{
++	if(is_connect_last != is_connect)
++	{
++		is_connect_last = is_connect;
++		if(is_connect)
++		{
++			PX4_INFO("connected");
++			_battery->setConnected(true);
++		}else{
++			PX4_ERR("disconnect");
++			_battery->setConnected(false);
++		}
++	}
++
++	_battery->updateCurrent(curr);
++	_battery->updateVoltage(vbat);
++
++	hrt_abstime t = hrt_absolute_time();
++	_battery->updateAndPublishBatteryStatus(t);
++}
++
++void parse_data(uint8_t *rdata)
++{
++	aux_recv_update = hrt_absolute_time();
++	for(int i=0;i<4;i++)
++	{
++		adc[i] = (uint16_t)((rdata[i*2+1]<<8)|rdata[i*2]);
++		adcf[i] = adc[i] * 3.3f / 4095.0f;
++		pwm[i] = (uint16_t)((rdata[i*2+9]<<8)|rdata[i*2+8]);
++	}
++
++	vbat = adcf[0]*222.0f/22.0f;
++	curr = adcf[1]/0.01275f;
++
++	pwm_count_fps = (uint16_t)((rdata[17]<<8)|rdata[16]);
++	loop_count = (uint16_t)((rdata[19]<<8)|rdata[18]);
++	uart_callback_count = (uint16_t)((rdata[21]<<8)|rdata[20]);
++	is_connect = (uint16_t)((rdata[23]<<8)|rdata[22]);
++
++	update_data();
++}
++
++void uart_recv(uint8_t *data,int len)
++{
++	static int state = 0;
++	static int datalen = 0;
++	static uint8_t rdata[RDATA_SIZE-2];
++
++	for(int i=0;i<len;i++)
++	{
++		if(state == 0 && data[i] == 0x12)
++		{
++			state = 1;
++		}else if(state == 1 && data[i] == 0x34)
++		{
++			state = 2;
++			datalen = 0;
++		}else if(state == 2 && datalen < (RDATA_SIZE-2))
++		{
++			rdata[datalen] = data[i];
++			datalen++;
++			if(datalen == (RDATA_SIZE-2))
++			{
++				parse_data(rdata);
++				state = 0;
++			}
++		}else if(data[i] == 0x12)
++		{
++			state = 1;
++		}
++	}
++}
++
++
++int task_main(int argc, char *argv[])
++{
++	static uint8_t rdata[RDATA_SIZE];
++	int rlen = 0;
++	while (true) {
++
++		if(_uart_fd > 0)
++		{
++			rlen = read(_uart_fd, rdata, RDATA_SIZE);
++			if(rlen > 0)
++			{
++				uart_recv(rdata,rlen);
++			}
++		}
++
++		if(is_connect == 1)
++		{
++			if(hrt_absolute_time() - aux_recv_update > 1000000)
++			{
++				is_connect = 0;
++				update_data();
++			}
++		}
++
++		px4_usleep(10000);
++	}
++	return 0;
++}
++
++int G0AUX::init()
++{
++	_battery = new Battery(1, nullptr, 100_ms, battery_status_s::BATTERY_SOURCE_POWER_MODULE);
++	int speed = B115200;
++	_uart_fd = open("/dev/ttyS3", O_RDWR | O_NOCTTY | O_NONBLOCK);
++	if (_uart_fd < 0) {
++		PX4_ERR(">>>>> ERROR opening UART, aborting..\n");
++		return -1;
++	}
++
++	/* Try to set baud rate */
++	struct termios uart_config;
++	int termios_state;
++
++	/* Initialize the uart config */
++	if ((termios_state = tcgetattr(_uart_fd, &uart_config)) < 0)
++	{
++		PX4_ERR("tcgetattr fail.");
++		return -1;
++	}
++	/* Clear ONLCR flag (which appends a CR for every LF) */
++	uart_config.c_oflag &= ~ONLCR;
++
++	/* Set baud rate */
++	if (cfsetispeed(&uart_config, speed) < 0 || cfsetospeed(&uart_config, speed) < 0)
++	{
++		PX4_ERR("cfsetispeed fail.");
++		return -1;
++	}
++
++#if defined(__PX4_LINUX) || defined(__PX4_DARWIN) || defined(__PX4_CYGWIN)
++	/* Put in raw mode */
++	cfmakeraw(&uart_config);
++#endif
++
++	uart_config.c_cc[VMIN]  = 0;
++	uart_config.c_cc[VTIME] = 1;
++
++	if ((termios_state = tcsetattr(_uart_fd, TCSANOW, &uart_config)) < 0)
++	{
++		PX4_ERR("tcsetattr fail.");
++		return -1;
++	}
++
++	// _task_should_exit = false;
++
++	_task_handle = px4_task_spawn_cmd("stm32g0_rx_in_main",
++					  SCHED_DEFAULT,
++					  SCHED_PRIORITY_DEFAULT,
++					  2000,
++					  (px4_main_t)&task_main,
++					  nullptr);
++
++	ScheduleNow();
++
++	return 0;
++}
++
++int G0AUX::task_spawn(int argc, char *argv[])
++{
++	G0AUX *instance = new G0AUX();
++
++	if (instance) {
++		_object.store(instance);
++		_task_id = task_id_is_work_queue;
++
++		if (instance->init() == PX4_OK) {
++			return PX4_OK;
++		}
++
++	} else {
++		PX4_ERR("alloc failed");
++	}
++
++	delete instance;
++	_object.store(nullptr);
++	_task_id = -1;
++
++	return PX4_ERROR;
++}
++
++void parse_cmd_g0(uint8_t *data,uint16_t len)
++{
++
++}
++
++#define RHEAD0 0x11
++#define RHEAD1 0x22
++void unpack_data(uint8_t *data,uint16_t len)
++{
++	static uint8_t state = 0;
++	static uint8_t check_sum = 0,rcheck_sum = 0;
++	static uint8_t cmd = 0;
++	static uint16_t rlen = 0,rcount = 0;
++	static uint8_t rdata[1024];
++
++	for(int i=0;i<len;i++)
++	{
++		switch(state){
++			case 0:
++				if(data[i] == RHEAD0)
++				{
++					state = 1;
++				}
++			break;
++			case 1:
++				if(data[i] == RHEAD1)
++				{
++					state = 2;
++				}else if(data[i] == RHEAD0){
++					state = 1;
++				}else{
++					state = 0;
++				}
++			break;
++			case 2:
++				rcheck_sum = data[i];
++				check_sum = 0;
++				state = 3;
++			break;
++			case 3:
++				cmd = data[i];
++				check_sum += data[i];
++				state = 4;
++			break;
++			case 4:
++				rlen = (uint16_t)(data[i]<<8);
++				check_sum += data[i];
++				state = 5;
++			break;
++			case 5:
++				rlen |= data[i];
++				check_sum += data[i];
++				rcount = 0;
++				state = 6;
++			break;
++			case 6:
++				if(rcount < rlen)
++				{
++					rdata[rcount] = data[i];
++					check_sum += data[i];
++				}
++
++				rcount++;
++				if(rcount == rlen)
++				{
++					if(check_sum == rcheck_sum)
++					{
++						if(cmd == 0x01)
++							parse_cmd_g0(rdata,rlen);
++					}
++					state = 0;
++				}
++			break;
++			default:
++				if(data[i] == RHEAD0)
++				{
++					state = 1;
++				}else{
++					state = 0;
++				}
++			break;
++		}
++	}
++}
++
++#define SHEAD0 0xAA
++#define SHEAD1 0xBB
++int pack_data(uint8_t cmd,uint8_t *data,uint16_t len,uint8_t *output,uint8_t outlen)
++{
++	uint8_t check_sum = 0;
++	if(6 + len > outlen)
++		return -1;
++
++	output[0] = SHEAD0;
++	output[1] = SHEAD1;
++
++	output[3] = cmd;
++	output[4] = (uint8_t)(len>>8);
++	output[5] = (uint8_t)len;
++	memcpy(output+6,data,len);
++
++	for(int i=3;i<6+len;i++)
++	{
++		check_sum+=output[i];
++	}
++	output[2] = check_sum;
++	return (6 + len);
++}
++
++#define SDATA_SIZE 12
++bool G0AUX::updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS],
++				unsigned num_outputs, unsigned num_control_groups_updated)
++{
++	uint16_t check_sum = 0;
++	// static uint16_t test_count_count = 0;
++	// static uint16_t test_count = 0;
++
++	// test_count_count++;
++	// if(test_count_count % 2 == 0)
++	// {
++	// 	test_count = 0;
++	// }else{
++	// 	test_count = 1800;
++	// }
++
++	static char sdata[SDATA_SIZE]={0xAB,0xCD};
++	int cnt = 2;
++
++	for (int i = 0; i < 4; i++) {
++
++		// uint16_t pout = test_count;
++		uint16_t pout = outputs[i] - 1000;
++
++		sdata[cnt++] = (char)(pout);
++		sdata[cnt++] = (char)(pout >> 8);
++
++		// test_count++;
++	}
++
++	for(int i=2;i<SDATA_SIZE-2;i++)
++	{
++		check_sum += sdata[i];
++	}
++
++	sdata[cnt++] = (char)(check_sum);
++	sdata[cnt++] = (char)(check_sum >> 8);
++
++	if(_uart_fd > 0)
++	{
++		write(_uart_fd, sdata, SDATA_SIZE);
++	}
++
++	//PX4_INFO("PWM: %d %d %d %d", outputs[0], outputs[1], outputs[2], outputs[3]);
++
++	return true;
++}
++
++void G0AUX::Run()
++{
++	if (should_exit()) {
++		ScheduleClear();
++		_mixing_output.unregister();
++
++		exit_and_cleanup();
++		return;
++	}
++
++	perf_begin(_cycle_perf);
++	perf_count(_interval_perf);
++
++	_mixing_output.update();
++
++	// check for parameter updates
++	if (_parameter_update_sub.updated()) {
++		// clear update
++		parameter_update_s pupdate;
++		_parameter_update_sub.copy(&pupdate);
++
++		// update parameters from storage
++		updateParams();
++	}
++
++	_mixing_output.updateSubscriptions(false);
++
++	perf_end(_cycle_perf);
++}
++
++int G0AUX::custom_command(int argc, char *argv[])
++{
++	return print_usage("unknown command");
++}
++
++int G0AUX::print_status()
++{
++	PX4_INFO_RAW("adc:%d %d %d %d pwm:%d %d %d %d update:%d loop:%d urx:%d isconnect:%d vbat:%0.2f curr:%0.4f\n",
++	adc[0],adc[1],adc[2],adc[3],
++	pwm[0],pwm[1],pwm[2],pwm[3],
++	pwm_count_fps,loop_count,uart_callback_count,is_connect,(double)vbat,(double)curr);
++
++	perf_print_counter(_cycle_perf);
++	perf_print_counter(_interval_perf);
++	// _mixing_output.printStatus();
++	return 0;
++}
++
++int G0AUX::print_usage(const char *reason)
++{
++	if (reason) {
++		PX4_WARN("%s\n", reason);
++	}
++
++	PRINT_MODULE_DESCRIPTION(
++		R"DESCR_STR(
++### Description
++stm32g0 auxio control.
++)DESCR_STR");
++
++	PRINT_MODULE_USAGE_NAME("auxio", "driver");
++	PRINT_MODULE_USAGE_COMMAND("start");
++	PRINT_MODULE_USAGE_DEFAULT_COMMANDS();
++
++	return 0;
++}
++
++extern "C" __EXPORT int auxio_main(int argc, char *argv[])
++{
++	return G0AUX::main(argc, argv);
++}
+diff --git a/src/drivers/auxio/auxio.hpp b/src/drivers/auxio/auxio.hpp
+new file mode 100644
+index 0000000000..d7ee46e477
+--- /dev/null
++++ b/src/drivers/auxio/auxio.hpp
+@@ -0,0 +1,91 @@
++/****************************************************************************
++ *
++ *   Copyright (c) 2021 PX4 Development Team. All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in
++ *    the documentation and/or other materials provided with the
++ *    distribution.
++ * 3. Neither the name PX4 nor the names of its contributors may be
++ *    used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
++ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
++ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
++ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
++ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
++ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
++ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
++ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
++ *
++ ****************************************************************************/
++
++#pragma once
++
++#include <battery/battery.h>
++#include <drivers/device/device.h>
++#include <lib/mathlib/mathlib.h>
++#include <lib/mixer_module/mixer_module.hpp>
++#include <lib/parameters/param.h>
++#include <lib/perf/perf_counter.h>
++#include <px4_platform_common/px4_config.h>
++#include <px4_platform_common/log.h>
++#include <px4_platform_common/module.h>
++#include <uORB/Publication.hpp>
++#include <uORB/PublicationMulti.hpp>
++#include <uORB/Subscription.hpp>
++#include <uORB/topics/parameter_update.h>
++#include <px4_platform/pwm_out_base.h>
++#include <uORB/topics/battery_status.h>
++
++using namespace time_literals;
++
++class G0AUX : public ModuleBase<G0AUX>, public OutputModuleInterface
++{
++public:
++	G0AUX();
++	virtual ~G0AUX();
++
++	/** @see ModuleBase */
++	static int task_spawn(int argc, char *argv[]);
++
++	/** @see ModuleBase */
++	static int custom_command(int argc, char *argv[]);
++
++	/** @see ModuleBase */
++	static int print_usage(const char *reason = nullptr);
++
++	void Run() override;
++
++	/** @see ModuleBase::print_status() */
++	int print_status() override;
++
++	int init();
++
++	bool updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS],
++			   unsigned num_outputs, unsigned num_control_groups_updated) override;
++
++private:
++
++	static constexpr int MAX_ACTUATORS = 8;
++
++	MixingOutput _mixing_output{"PWM_MAIN", MAX_ACTUATORS, *this, MixingOutput::SchedulingPolicy::Auto, false};
++
++	uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
++
++	perf_counter_t	_cycle_perf;
++	perf_counter_t	_interval_perf;
++
++
++};
+diff --git a/src/drivers/auxio/module.yaml b/src/drivers/auxio/module.yaml
+new file mode 100644
+index 0000000000..311d71c300
+--- /dev/null
++++ b/src/drivers/auxio/module.yaml
+@@ -0,0 +1,11 @@
++module_name: STM32G0 AUXIO CONTROL
++actuator_output:
++  output_groups:
++    - param_prefix: PWM_MAIN
++      channel_label: 'Channel'
++      standard_params:
++        disarmed: { min: 800, max: 2200, default: 1000 }
++        min: { min: 800, max: 1400, default: 1000 }
++        max: { min: 1600, max: 2200, default: 2000 }
++        failsafe: { min: 800, max: 2200 }
++      num_channels: 8
+diff --git a/src/drivers/distance_sensor/lightware_laser_serial/lightware_laser_serial.cpp b/src/drivers/distance_sensor/lightware_laser_serial/lightware_laser_serial.cpp
+index de418c69d7..f27636657f 100644
+--- a/src/drivers/distance_sensor/lightware_laser_serial/lightware_laser_serial.cpp
++++ b/src/drivers/distance_sensor/lightware_laser_serial/lightware_laser_serial.cpp
+@@ -308,7 +308,7 @@ void LightwareLaserSerial::Run()
+ 		// LW20: Enable serial mode by sending some characters
+ 		if (hw_model == 8) {
+ 			const char *data = "www\r\n";
+-			(void)!::write(_fd, &data, strlen(data));
++			(void)!::write(_fd, data, strlen(data));
+ 		}
+ 	}
+ 
+diff --git a/src/modules/battery_status/battery_status.cpp b/src/modules/battery_status/battery_status.cpp
+index ef921f3eaf..838602c501 100644
+--- a/src/modules/battery_status/battery_status.cpp
++++ b/src/modules/battery_status/battery_status.cpp
+@@ -62,11 +62,15 @@
+ #include <uORB/topics/parameter_update.h>
+ #include <uORB/topics/adc_report.h>
+ #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
+-
++#include <sys/mman.h>
++#include <sys/ioctl.h>
+ #include "analog_battery.h"
+ 
+ using namespace time_literals;
+ 
++#define GPADC_SAMPLE_FREQUENCY_HZ            10
++#define GPADC_SAMPLE_INTERVAL_US             (1_s / GPADC_SAMPLE_FREQUENCY_HZ)
++
+ /**
+  * The channel definitions (e.g., ADC_BATTERY_VOLTAGE_CHANNEL, ADC_BATTERY_CURRENT_CHANNEL, and ADC_AIRSPEED_VOLTAGE_CHANNEL) are defined in board_config.h
+  */
+@@ -99,12 +103,14 @@ public:
+ private:
+ 	void Run() override;
+ 
++	Battery 		  _battery;
+ 	uORB::SubscriptionInterval	_parameter_update_sub{ORB_ID(parameter_update), 1_s};				/**< notification of parameter updates */
+ 	uORB::SubscriptionCallbackWorkItem _adc_report_sub{this, ORB_ID(adc_report)};
+ 
+ 	static constexpr uint32_t SAMPLE_FREQUENCY_HZ = 100;
+ 	static constexpr uint32_t SAMPLE_INTERVAL_US  = 1_s / SAMPLE_FREQUENCY_HZ;
+ 
++	FILE *in0_raw_file;
+ 	AnalogBattery _battery1;
+ 
+ #if BOARD_NUMBER_BRICKS > 1
+@@ -137,9 +143,10 @@ private:
+ BatteryStatus::BatteryStatus() :
+ 	ModuleParams(nullptr),
+ 	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::hp_default),
+-	_battery1(1, this, SAMPLE_INTERVAL_US, battery_status_s::BATTERY_SOURCE_POWER_MODULE, 0),
++	_battery(1, this, GPADC_SAMPLE_INTERVAL_US, battery_status_s::BATTERY_SOURCE_POWER_MODULE),
++	_battery1(2, this, SAMPLE_INTERVAL_US, battery_status_s::BATTERY_SOURCE_POWER_MODULE, 0),
+ #if BOARD_NUMBER_BRICKS > 1
+-	_battery2(2, this, SAMPLE_INTERVAL_US, battery_status_s::BATTERY_SOURCE_POWER_MODULE, 1),
++	_battery2(3, this, SAMPLE_INTERVAL_US, battery_status_s::BATTERY_SOURCE_POWER_MODULE, 1),
+ #endif
+ 	_loop_perf(perf_alloc(PC_ELAPSED, MODULE_NAME))
+ {
+@@ -165,72 +172,40 @@ BatteryStatus::parameter_update_poll(bool forced)
+ 	}
+ }
+ 
++volatile unsigned int *GPADC_BASE_MAP;
++
++#define GPADC_CH0_DATA  (GPADC_BASE_MAP + 0x80/4)
++#define GPADC_CTRL      (GPADC_BASE_MAP + 0x04/4)
++#define GPADC_CS_EN     (GPADC_BASE_MAP + 0x08/4)
++#define GPADC_DATA_INTC (GPADC_BASE_MAP + 0x28/4)
++#define GPADC_DATA_INTS (GPADC_BASE_MAP + 0x38/4)
++
++#define GPADC_BASE 0x02009000
++
+ void
+ BatteryStatus::adc_poll()
+ {
+-	/* For legacy support we publish the battery_status for the Battery that is
+-	* associated with the Brick that is the selected source for VDD_5V_IN
+-	* Selection is done in HW ala a LTC4417 or similar, or maybe hard coded
+-	* Like in the FMUv4
+-	*/
+-
+-	/* Per Brick readings with default unread channels at 0 */
+-	float bat_current_adc_readings[BOARD_NUMBER_BRICKS] {};
+-	float bat_voltage_adc_readings[BOARD_NUMBER_BRICKS] {};
+-	bool has_bat_voltage_adc_channel[BOARD_NUMBER_BRICKS] {};
+-
+-	int selected_source = -1;
+-
+-	adc_report_s adc_report;
+-
+-	if (_adc_report_sub.update(&adc_report)) {
+-
+-		/* Read add channels we got */
+-		for (unsigned i = 0; i < PX4_MAX_ADC_CHANNELS; ++i) {
+-			for (int b = 0; b < BOARD_NUMBER_BRICKS; b++) {
+-
+-				/* Once we have subscriptions, Do this once for the lowest (highest priority
+-				 * supply on power controller) that is valid.
+-				 */
+-				if (selected_source < 0 && _analogBatteries[b]->is_valid()) {
+-					/* Indicate the lowest brick (highest priority supply on power controller)
+-					 * that is valid as the one that is the selected source for the
+-					 * VDD_5V_IN
+-					 */
+-					selected_source = b;
+-				}
+-
+-				/* look for specific channels and process the raw voltage to measurement data */
+-
+-				if (adc_report.channel_id[i] >= 0) {
+-					if (adc_report.channel_id[i] == _analogBatteries[b]->get_voltage_channel()) {
+-						/* Voltage in volts */
+-						bat_voltage_adc_readings[b] = adc_report.raw_data[i] *
+-									      adc_report.v_ref /
+-									      adc_report.resolution;
+-						has_bat_voltage_adc_channel[b] = true;
+-
+-					} else if (adc_report.channel_id[i] == _analogBatteries[b]->get_current_channel()) {
+-						bat_current_adc_readings[b] = adc_report.raw_data[i] *
+-									      adc_report.v_ref /
+-									      adc_report.resolution;
+-					}
+-				}
+-
+-			}
+-		}
+ 
+-		for (int b = 0; b < BOARD_NUMBER_BRICKS; b++) {
++	float in0_voltage = 0;
++	int in0_raw_value;
+ 
+-			if (has_bat_voltage_adc_channel[b]) { // Do not publish if no voltage channel configured
+-				_analogBatteries[b]->updateBatteryStatusADC(
+-					hrt_absolute_time(),
+-					bat_voltage_adc_readings[b],
+-					bat_current_adc_readings[b]
+-				);
+-			}
+-		}
++	in0_raw_value = *GPADC_CH0_DATA;
++	in0_voltage = in0_raw_value*1.8f/4096/22*222;
++	in0_voltage *= 1.03f;
++
++	// PX4_INFO("%d %0.2f",in0_raw_value,(double)in0_voltage);
++
++	if(in0_voltage > 7.0f)
++	{
++		_battery.setConnected(true);
++
++	}else{
++		_battery.setConnected(false);
+ 	}
++
++	_battery.updateVoltage(in0_voltage);
++	_battery.updateCurrent(0);
++	_battery.updateAndPublishBatteryStatus(hrt_absolute_time());
+ }
+ 
+ void
+@@ -279,7 +254,28 @@ BatteryStatus::task_spawn(int argc, char *argv[])
+ bool
+ BatteryStatus::init()
+ {
+-	return _adc_report_sub.registerCallback();
++
++	int mm_fd = open("/dev/mem", O_RDWR | O_SYNC);
++	if (mm_fd < 0)
++	{
++		PX4_ERR("GPADC open(/dev/mem) failed.");
++		return -1;
++	}
++
++	GPADC_BASE_MAP = (volatile unsigned int *)mmap(0, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, mm_fd, GPADC_BASE);
++
++	if (GPADC_BASE_MAP == MAP_FAILED)
++	{
++		PX4_ERR("GPADC_BASE_MAP mmap fail.");
++		return -1;
++	}
++
++	*GPADC_CS_EN = 1;
++        *GPADC_CTRL = __uint32_t((1<<16)|(1<<19));
++
++	ScheduleOnInterval(300_ms);
++	return 1;
++
+ }
+ 
+ int BatteryStatus::custom_command(int argc, char *argv[])
+diff --git a/src/modules/commander/commander_helper.cpp b/src/modules/commander/commander_helper.cpp
+index f642541fb7..2121cc8f6e 100644
+--- a/src/modules/commander/commander_helper.cpp
++++ b/src/modules/commander/commander_helper.cpp
+@@ -124,7 +124,7 @@ bool is_ground_vehicle(const vehicle_status_s &current_status)
+ 
+ // End time for currently blinking LED message, 0 if no blink message
+ static hrt_abstime blink_msg_end = 0;
+-static int fd_leds{-1};
++// static int fd_leds{-1};
+ 
+ static led_control_s led_control {};
+ static orb_advert_t led_control_pub = nullptr;
+@@ -333,28 +333,28 @@ int led_init()
+ 	led_control_pub = orb_advertise_queue(ORB_ID(led_control), &led_control, led_control_s::ORB_QUEUE_LENGTH);
+ 
+ 	/* first open normal LEDs */
+-	fd_leds = px4_open(LED0_DEVICE_PATH, O_RDWR);
++	// fd_leds = px4_open(LED0_DEVICE_PATH, O_RDWR);
+ 
+-	if (fd_leds < 0) {
+-		// there might not be an LED available, so don't make this an error
+-		PX4_INFO("LED: open %s failed (%i)", LED0_DEVICE_PATH, errno);
+-		return -errno;
+-	}
++	// if (fd_leds < 0) {
++	// 	// there might not be an LED available, so don't make this an error
++	// 	PX4_INFO("LED: open %s failed (%i)", LED0_DEVICE_PATH, errno);
++	// 	return -errno;
++	// }
+ 
+-	/* the green LED is only available on FMUv5 */
+-	px4_ioctl(fd_leds, LED_ON, LED_GREEN);
++	// /* the green LED is only available on FMUv5 */
++	// px4_ioctl(fd_leds, LED_ON, LED_GREEN);
+ 
+-	/* the blue LED is only available on AeroCore but not FMUv2 */
+-	px4_ioctl(fd_leds, LED_ON, LED_BLUE);
++	// /* the blue LED is only available on AeroCore but not FMUv2 */
++	// px4_ioctl(fd_leds, LED_ON, LED_BLUE);
+ 
+-	/* switch blue off */
+-	led_off(LED_BLUE);
++	// /* switch blue off */
++	// led_off(LED_BLUE);
+ 
+-	/* we consider the amber led mandatory */
+-	if (px4_ioctl(fd_leds, LED_ON, LED_AMBER)) {
+-		PX4_WARN("Amber LED: ioctl fail");
+-		return PX4_ERROR;
+-	}
++	// /* we consider the amber led mandatory */
++	// if (px4_ioctl(fd_leds, LED_ON, LED_AMBER)) {
++	// 	PX4_WARN("Amber LED: ioctl fail");
++	// 	return PX4_ERROR;
++	// }
+ 
+ 	/* switch amber off */
+ 	led_off(LED_AMBER);
+@@ -365,22 +365,67 @@ int led_init()
+ void led_deinit()
+ {
+ 	orb_unadvertise(led_control_pub);
+-	px4_close(fd_leds);
++	// px4_close(fd_leds);
+ }
+ 
+ int led_toggle(int led)
+ {
+-	return px4_ioctl(fd_leds, LED_TOGGLE, led);
++	char buffer[128];
++	FILE *fp = nullptr;
++
++	if(led ==LED_RED)//1
++	{
++		fp = popen("gpioget gpiochip0 116", "r");
++		fgets(buffer,sizeof(buffer),fp);
++		fclose(fp);
++		if(buffer[0]=='0')
++		{
++			system("gpioset gpiochip0 116=1");
++		}else{
++			system("gpioset gpiochip0 116=0");
++		}
++	}else if(led ==LED_GREEN)//0
++	{
++		fp = popen("gpioget gpiochip0 117", "r");
++		fgets(buffer,sizeof(buffer),fp);
++		fclose(fp);
++		if(buffer[0]=='0')
++		{
++			system("gpioset gpiochip0 117=1");
++		}else{
++			system("gpioset gpiochip0 117=0");
++		}
++	}
++
++	return 0;
++
+ }
+ 
+ int led_on(int led)
+ {
+-	return px4_ioctl(fd_leds, LED_ON, led);
++
++	if(led ==LED_RED)//1
++	{
++		system("gpioset gpiochip0 116=1");
++	}else if(led ==LED_GREEN)//0
++	{
++		system("gpioset gpiochip0 117=1");
++	}
++	return 0;
+ }
+ 
+ int led_off(int led)
+ {
+-	return px4_ioctl(fd_leds, LED_OFF, led);
++
++	if(led ==LED_RED)//1
++	{
++		system("gpioset gpiochip0 116=0");
++	}else if(led ==LED_GREEN)//0
++	{
++		system("gpioset gpiochip0 117=0");
++	}
++
++	return 0;
+ }
+ 
+ void rgbled_set_color_and_mode(uint8_t color, uint8_t mode, uint8_t blinks, uint8_t prio)
+diff --git a/src/modules/mavlink/streams/DISTANCE_SENSOR.hpp b/src/modules/mavlink/streams/DISTANCE_SENSOR.hpp
+index 9042403a48..9587455cbe 100644
+--- a/src/modules/mavlink/streams/DISTANCE_SENSOR.hpp
++++ b/src/modules/mavlink/streams/DISTANCE_SENSOR.hpp
+@@ -61,8 +61,8 @@ private:
+ 	bool send() override
+ 	{
+ 		bool updated = false;
+-
+-		for (int i = 0; i < _distance_sensor_subs.size(); i++) {
++		// for (int i = 0; i < _distance_sensor_subs.size(); i++) {
++		for (int i = 0; i < 1; i++) {
+ 			distance_sensor_s dist_sensor;
+ 
+ 			if (_distance_sensor_subs[i].update(&dist_sensor)) {
+@@ -88,6 +88,7 @@ private:
+ 					break;
+ 				}
+ 
++
+ 				msg.current_distance = dist_sensor.current_distance * 1e2f; // m to cm
+ 				msg.id               = i;
+ 				msg.max_distance     = dist_sensor.max_distance * 1e2f;     // m to cm
+@@ -95,6 +96,8 @@ private:
+ 				msg.orientation      = dist_sensor.orientation;
+ 				msg.covariance       = dist_sensor.variance * 1e4f;         // m^2 to cm^2
+ 
++				// PX4_INFO("%d: %d",msg.id,msg.current_distance);
++
+ 				mavlink_msg_distance_sensor_send_struct(_mavlink->get_channel(), &msg);
+ 
+ 				updated = true;
