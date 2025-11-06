@@ -373,6 +373,9 @@ int led_toggle(int led)
 	char buffer[128];
 	FILE *fp = nullptr;
 
+	//TODO: pxh> commander takeoffgpioget  with cmd : make px4_sitl gz_x500
+	return 0;
+
 	if(led ==LED_RED)//1
 	{
 		fp = popen("gpioget gpiochip0 116", "r");
@@ -404,6 +407,9 @@ int led_toggle(int led)
 int led_on(int led)
 {
 
+	//TODO: pxh> commander takeoffgpioget  with cmd : make px4_sitl gz_x500
+	return 0;
+
 	if(led ==LED_RED)//1
 	{
 		system("gpioset gpiochip0 116=1");
@@ -416,6 +422,10 @@ int led_on(int led)
 
 int led_off(int led)
 {
+
+	//TODO: pxh> commander takeoffgpioget  with cmd : make px4_sitl gz_x500
+	return 0;
+
 
 	if(led ==LED_RED)//1
 	{

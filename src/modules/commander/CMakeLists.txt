@@ -41,6 +41,8 @@ px4_add_module(
 	MODULE modules__commander
 	MAIN commander
 	COMPILE_FLAGS
+		-Wno-unused-result
+		-Wno-mismatched-dealloc
 	SRCS
 		accelerometer_calibration.cpp
 		airspeed_calibration.cpp
