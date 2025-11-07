@@ -33,6 +33,14 @@ else()
 		src/px4/common/main.cpp
 		apps.cpp
 		)
+
+	add_library(px4_main SHARED
+		src/px4/common/main.cpp
+		apps.cpp
+	)
+	target_compile_definitions(px4_main PRIVATE
+	__PX4_SITL_MAIN_OVERRIDE
+	)
 endif()
 
 target_link_libraries(px4
@@ -40,6 +48,13 @@ target_link_libraries(px4
 		${module_libraries}
 		m
 		parameters
+)
+
+target_link_libraries(px4
+	PRIVATE
+		${module_libraries}
+		m
+		parameters rt pthread uORB
 )
 
 if((NOT APPLE) AND (NOT ANDROID))

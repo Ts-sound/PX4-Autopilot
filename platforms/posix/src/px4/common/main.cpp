@@ -116,7 +116,9 @@ static int change_directory(const std::string &directory);
 
 
 #ifdef __PX4_SITL_MAIN_OVERRIDE
-int SITL_MAIN(int argc, char **argv);
+extern "C" {
+__EXPORT int SITL_MAIN(int argc, char **argv);
+}
 
 int SITL_MAIN(int argc, char **argv)
 #else
