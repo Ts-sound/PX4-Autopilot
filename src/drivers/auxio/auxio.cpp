@@ -383,7 +383,7 @@ bool G0AUX::updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS],
 	// 	test_count = 1800;
 	// }
 
-	static char sdata[SDATA_SIZE]={0xAB,0xCD};
+	static char sdata[SDATA_SIZE]={(char)0xAB,(char)0xCD};
 	int cnt = 2;
 
 	for (int i = 0; i < 4; i++) {
@@ -407,7 +407,8 @@ bool G0AUX::updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS],
 
 	if(_uart_fd > 0)
 	{
-		write(_uart_fd, sdata, SDATA_SIZE);
+		int ret = write(_uart_fd, sdata, SDATA_SIZE);
+		PX4_INFO("ret:%d",ret);
 	}
 
 	//PX4_INFO("PWM: %d %d %d %d", outputs[0], outputs[1], outputs[2], outputs[3]);

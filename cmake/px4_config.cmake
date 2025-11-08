@@ -42,6 +42,12 @@ if(NOT CONFIG)
 		set(CONFIG "px4_sitl_default" CACHE STRING "desired configuration")
 	endif()
 endif()
+message("-- CONFIG=${CONFIG}")
+
+message(STATUS " s PX4 config file: ${PX4_CONFIG_FILE}")
+if(PX4_CONFIG_FILE)
+unset(PX4_CONFIG_FILE)
+endif()
 
 if(NOT PX4_CONFIG_FILE)
 
@@ -49,6 +55,7 @@ if(NOT PX4_CONFIG_FILE)
 		RELATIVE "${PX4_SOURCE_DIR}/boards"
 		"boards/*.px4board"
 		)
+	message(STATUS "board_configs: ${board_configs}")
 
 	foreach(filename ${board_configs})
 		# parse input CONFIG into components to match with existing in tree configs

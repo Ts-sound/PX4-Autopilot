@@ -92,9 +92,15 @@ main() --> px4_daemon::Pxh::process_line(cmd, true); --> Pxh::process_line() -->
 
 -------
 
+### silt_px4_main
+
 cmake ../../ -DBOARD=px4_sitl
 
 make -j4
+
+![alt text](image-3.png)
+
+cmake ../../ -DBOARD=px4_t113_default -DCONFIG=px4_t113_default
 
 https://docs.px4.io/v1.14/en/sim_gazebo_gz/
 https://docs.px4.io/main/en/simulation/
