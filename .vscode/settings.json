@@ -135,5 +135,8 @@
                 "MD034": false,
                 "MD045": false
 
-              },
+        },
+        "[cpp]": {
+                "editor.defaultFormatter": "ms-vscode.cpptools"
+        },
 }

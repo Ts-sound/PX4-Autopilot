@@ -41,6 +41,24 @@ else()
 	target_compile_definitions(px4_main PRIVATE
 	__PX4_SITL_MAIN_OVERRIDE
 	)
+	target_link_libraries(px4_main
+	PRIVATE
+		${module_libraries}
+		m
+		parameters rt pthread uORB
+		)
+
+	# add test
+	add_executable(px4_main_test
+		src/px4/common/silt_main_test.cpp
+		)
+	target_compile_definitions(px4_main_test PRIVATE
+		__PX4_SITL_MAIN_OVERRIDE
+		)
+	target_link_libraries(px4_main_test
+		PRIVATE
+			px4_main
+		)
 endif()
 
 target_link_libraries(px4
@@ -50,12 +68,7 @@ target_link_libraries(px4
 		parameters
 )
 
-target_link_libraries(px4
-	PRIVATE
-		${module_libraries}
-		m
-		parameters rt pthread uORB
-)
+
 
 if((NOT APPLE) AND (NOT ANDROID))
 	target_link_libraries(px4 PRIVATE rt)

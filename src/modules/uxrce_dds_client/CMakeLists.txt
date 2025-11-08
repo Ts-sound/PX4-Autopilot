@@ -97,6 +97,7 @@ else()
 		LOG_OUTPUT_ON_FAILURE true
 	)
 
+
 	add_library(libmicroxrceddsclient STATIC IMPORTED GLOBAL)
 	set_target_properties(libmicroxrceddsclient
 		PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/${lib_dir}/libmicroxrcedds_client.a
@@ -138,6 +139,7 @@ else()
 		COMPILE_FLAGS
 			#-O0
 			${MAX_CUSTOM_OPT_LEVEL}
+			-fPIC
 		SRCS
 			${CMAKE_CURRENT_BINARY_DIR}/dds_topics.h
 			uxrce_dds_client.cpp
