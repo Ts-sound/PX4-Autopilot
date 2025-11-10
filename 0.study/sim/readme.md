@@ -102,6 +102,12 @@ make -j4
 
 cmake ../../ -DBOARD=px4_t113_default -DCONFIG=px4_t113_default
 
+
+
+```bash
+./bin/px4 -s px4_mc.config -d
+```
+
 https://docs.px4.io/v1.14/en/sim_gazebo_gz/
 https://docs.px4.io/main/en/simulation/
 https://docs.px4.io/main/zh/ros2/user_guide#install-px4
