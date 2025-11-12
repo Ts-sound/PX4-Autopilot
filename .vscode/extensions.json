@@ -18,6 +18,9 @@
         "twxs.cmake",
         "uavcan.dsdl",
         "wholroyd.jinja",
-        "zixuanwang.linkerscript"
+        "zixuanwang.linkerscript",
+        "davidanson.vscode-markdownlint",
+        "shd101wyy.markdown-preview-enhanced",
+        "yzhang.markdown-all-in-one"
     ]
 }
