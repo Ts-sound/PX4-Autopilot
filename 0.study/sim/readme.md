@@ -102,6 +102,7 @@ make -j4
 
 cmake ../../ -DBOARD=px4_t113_default -DCONFIG=px4_t113_default
 
+cmake ../../ -DBOARD=px4_t113_default -DCONFIG=px4_t113_default -DCMAKE_TOOLCHAIN_FILE=/opt/tong/ws/gomros2-devicelayer/toolchain/Linux-aarch64.cmake
 
 
 ```bash
