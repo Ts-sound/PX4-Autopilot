@@ -1,0 +1,126 @@
+# px4组件化机制(module)分析
+
+PX4采用高度模块化软件设计，核心思想是"单一职责、松耦合、高内聚"，可扩展性好，方便开发者添加自定义功能。
+
+## px4 模块结构
+
+> px4 使用 cmake 函数 `px4_add_module()` 定义模块
+
+* 以px4 源码目录下 `src/drivers/linux_pwm_out` 该模块作为案例分析，目录结构如下：
+
+```bash
+.
+├── CMakeLists.txt
+├── Kconfig
+├── linux_pwm_out.cpp
+├── linux_pwm_out.hpp
+└── module.yaml
+```
+
+### a. `[module]/CMakeLists.txt`
+
+```c++
+px4_add_module(
+ MODULE drivers__linux_pwm_out
+ MAIN linux_pwm_out
+ COMPILE_FLAGS
+ SRCS
+  linux_pwm_out.cpp
+ MODULE_CONFIG
+  module.yaml
+ DEPENDS
+  mixer_module
+ )
+```
+
+* `px4_add_module` 函数定义在 `cmake/px4_add_module.cmake`
+* `MODULE` 编译时模块名称，不能与其他模块名称冲突 ; `add_library(${MODULE} STATIC EXCLUDE_FROM_ALL ${SRCS})`
+* `MAIN` 组件运行时名称，不能冲突，可以看到模块实际使用的是该宏定义 ：
+
+```c++
+/// cmake 文件设置宏
+// if(MAIN)
+//   target_compile_definitions(${MODULE} PRIVATE PX4_MAIN=${MAIN}_app_main)
+//   target_compile_definitions(${MODULE} PRIVATE MODULE_NAME="${MAIN}")
+// else()
+
+
+/// src/drivers/linux_pwm_out/linux_pwm_out.cpp
+LinuxPWMOut::LinuxPWMOut() :
+ OutputModuleInterface(MODULE_NAME, px4::wq_configurations::hp_default),
+ _cycle_perf(perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")),
+ _interval_perf(perf_alloc(PC_INTERVAL, MODULE_NAME": interval")){}
+
+```
+
+* `COMPILE_FLAGS` 添加编译时的 flags ， 如 ： `-Wno-cast-align`
+* `MODULE_CONFIG` 定义模块的元数据和接口, 自动生成命令行帮助文档 , `Tools/module_config/generate_params.py,Tools/module_config/generate_params.py`
+* `DEPENDS` 依赖组件s
+
+### b. `Kconfig`
+
+```bash
+menuconfig DRIVERS_LINUX_PWM_OUT
+ bool "linux_pwm_out"
+ default n
+ ---help---
+  Enable support for linux_pwm_out
+```
+
+* 定义模块在配置菜单中的选项
+* 在make menuconfig时可见，控制模块是否被编译进固件
+
+### c. `module.yaml`
+
+* `MODULE_CONFIG` 定义模块的元数据和接口, 自动生成命令行帮助文档 , `Tools/module_config/generate_params.py,Tools/module_config/generate_params.py`
+* 这个是 px4 自己定义的一套机制，目前还未深入分析，参考官方文档 : https://docs.px4.io/main/zh/advanced/px4_metadata
+
+### c. `*.cpp,*.hpp`
+
+* 源码 功能实现
+* 添加模块入口函数，这个是px4 加载该模块的入口 （需要保证函数名与 px4_add_module 中名称一致）：
+
+```c++
+/// src/drivers/linux_pwm_out/linux_pwm_out.cpp
+extern "C" __EXPORT int linux_pwm_out_main(int argc, char *argv[])
+{
+ return LinuxPWMOut::main(argc, argv);
+}
+
+```
+
+* 具体 px4 是怎么通过该入口函数启动 子模块的流程，后续在 px4启动流程 中再做分析；
+* 具体功能根据 继承对象函数（override）去实现，如下所示 :
+
+```c++
+class LinuxPWMOut : public ModuleBase<LinuxPWMOut>, public OutputModuleInterface
+{
+public:
+ LinuxPWMOut();
+ virtual ~LinuxPWMOut();
+
+ /** @see ModuleBase */  /// 创建模块实例 ，当用户执行linux_pwm_out start命令时被调用
+ static int task_spawn(int argc, char *argv[]);
+
+ /** @see ModuleBase */ /// 处理自定义命令行参数 ， 扩展模块的命令行功能
+ static int custom_command(int argc, char *argv[]);
+
+ /** @see ModuleBase */ /// 打印模块命令行使用帮助信息
+ static int print_usage(const char *reason = nullptr);
+
+ void Run() override;  /// 模块运行功能函数， 在工作队列中周期性运行
+
+ /** @see ModuleBase::print_status() */ /// 打印模块当前状态信息 ， 用户执行 linux_pwm_out status 时
+ int print_status() override;
+
+ int init(); /// 模块硬件初始化 ， 在task_spawn()中调用
+
+ /// PWM输出函数具体实现
+ bool updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS],
+      unsigned num_outputs, unsigned num_control_groups_updated) override;
+
+```
+
+### 总结
+
+* 基于以上内容，应该对 px4 组件化机制有个基本的了解。
