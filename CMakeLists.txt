@@ -110,31 +110,14 @@ include(px4_parse_function_args)
 #=============================================================================
 # git
 #
-if(EXISTS ${PX4_SOURCE_DIR}/.git)
-	message(STATUS "PX4 source directory is a git repository")
-	include(px4_git)
+include(px4_git)
 
-	execute_process(
-		COMMAND git describe --exclude ext/* --always --tags
-		OUTPUT_VARIABLE PX4_GIT_TAG
-		OUTPUT_STRIP_TRAILING_WHITESPACE
-		WORKING_DIRECTORY ${PX4_SOURCE_DIR}
-		)
-else()
-	message(WARNING "PX4 source directory is not a git repository")
-	set(PX4_GIT_TAG "v1.14.2-24-t113")
-	function(px4_add_git_submodule)
-	px4_parse_function_args(
-		NAME px4_add_git_submodule
-		ONE_VALUE TARGET PATH
-		REQUIRED TARGET PATH
-		ARGN ${ARGN})
-	message(WARNING "px4_add_git_submodule() called but PX4 is not a git repository")
-	add_custom_target(${TARGET} DEPENDS ${PATH} )
-	endfunction()
-endif()
-
-message(STATUS "PX4 git tag: ${PX4_GIT_TAG}")
+execute_process(
+	COMMAND git describe --exclude ext/* --always --tags
+	OUTPUT_VARIABLE PX4_GIT_TAG
+	OUTPUT_STRIP_TRAILING_WHITESPACE
+	WORKING_DIRECTORY ${PX4_SOURCE_DIR}
+	)
 
 # git describe to X.Y.Z version
 string(REPLACE "." ";" VERSION_LIST ${PX4_GIT_TAG})

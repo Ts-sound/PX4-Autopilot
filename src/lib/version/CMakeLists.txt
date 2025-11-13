@@ -32,43 +32,36 @@
 ############################################################################
 
 # check if px4 source is a git repo
-if(EXISTS ${PX4_SOURCE_DIR}/.git)
-        if(IS_DIRECTORY ${PX4_SOURCE_DIR}/.git)
-                # standard git repo
-                set(git_dir_path ${PX4_SOURCE_DIR}/.git)
-        else()
-                # git submodule
-                file(READ ${PX4_SOURCE_DIR}/.git git_dir_path)
-                string(STRIP ${git_dir_path} git_dir_path)
-                string(REPLACE "gitdir: " "" git_dir_path ${git_dir_path})
-                get_filename_component(git_dir_path "${git_dir_path}" REALPATH BASE_DIR ${PX4_SOURCE_DIR})
-        endif()
+if (EXISTS ${PX4_SOURCE_DIR}/.git)
+	if (IS_DIRECTORY ${PX4_SOURCE_DIR}/.git)
+		# standard git repo
+		set(git_dir_path ${PX4_SOURCE_DIR}/.git)
+	else()
+		# git submodule
+		file(READ ${PX4_SOURCE_DIR}/.git git_dir_path)
+		string(STRIP ${git_dir_path} git_dir_path)
+		string(REPLACE "gitdir: " "" git_dir_path ${git_dir_path})
+		get_filename_component(git_dir_path "${git_dir_path}" REALPATH BASE_DIR ${PX4_SOURCE_DIR})
+	endif()
 else()
-        message(WARNING "is not a git repository")
+	message(FATAL_ERROR "is not a git repository")
 endif()
 
 if(NOT IS_DIRECTORY "${git_dir_path}")
-        message(WARNING "${git_dir_path} is not a directory")
-        set(px4_git_ver_header ${CMAKE_CURRENT_SOURCE_DIR}/build_git_version.h)
-	# cp to build dir to avoid modifying source dir
-	configure_file(${px4_git_ver_header} ${CMAKE_CURRENT_BINARY_DIR}/build_git_version.h COPYONLY)
-else()
-        set(px4_git_ver_header ${CMAKE_CURRENT_BINARY_DIR}/build_git_version.h)
-        add_custom_command(OUTPUT ${px4_git_ver_header}
-                COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/px_update_git_header.py ${px4_git_ver_header} --validate
-                DEPENDS
-                ${CMAKE_CURRENT_SOURCE_DIR}/px_update_git_header.py
-                ${git_dir_path}/HEAD
-                ${git_dir_path}/index
-                WORKING_DIRECTORY ${PX4_SOURCE_DIR}
-                COMMENT "Generating git version header"
-        )
-
-        set_source_files_properties(${px4_git_ver_header} PROPERTIES GENERATED TRUE)
+	message(FATAL_ERROR "${git_dir_path} is not a directory")
 endif()
 
-message("Git version header: ${px4_git_ver_header}")
-
+set(px4_git_ver_header ${CMAKE_CURRENT_BINARY_DIR}/build_git_version.h)
+add_custom_command(OUTPUT ${px4_git_ver_header}
+	COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/px_update_git_header.py ${px4_git_ver_header} --validate
+	DEPENDS
+		${CMAKE_CURRENT_SOURCE_DIR}/px_update_git_header.py
+		${git_dir_path}/HEAD
+		${git_dir_path}/index
+	WORKING_DIRECTORY ${PX4_SOURCE_DIR}
+	COMMENT "Generating git version header"
+	)
+set_source_files_properties(${px4_git_ver_header} PROPERTIES GENERATED TRUE)
 add_custom_target(ver_gen ALL DEPENDS ${px4_git_ver_header})
 
 add_library(git_ver INTERFACE)
@@ -77,22 +70,19 @@ add_dependencies(git_ver ver_gen)
 
 # The URL for the elf file for crash logging
 set(BUILD_URI "localhost")
-if(DEFINED ENV{BUILD_URI})
-        set(BUILD_URI $ENV{BUILD_URI})
+if (DEFINED ENV{BUILD_URI})
+	set(BUILD_URI $ENV{BUILD_URI})
 endif()
 
 add_library(version version.c)
 
 target_compile_definitions(version
-        PUBLIC
-        PX4_BOARD_NAME="${PX4_BOARD_NAME}"
-        PX4_BOARD_LABEL="${PX4_BOARD_LABEL}"
-        PRIVATE
-        BUILD_URI=${BUILD_URI}
-)
+	PUBLIC
+		PX4_BOARD_NAME="${PX4_BOARD_NAME}"
+		PX4_BOARD_LABEL="${PX4_BOARD_LABEL}"
+	PRIVATE
+		BUILD_URI=${BUILD_URI}
+	)
 
 target_link_libraries(version PRIVATE git_ver)
 add_dependencies(version prebuild_targets)
-
-message("Build URI: ${BUILD_URI}")
-
