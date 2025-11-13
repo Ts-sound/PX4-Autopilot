@@ -193,10 +193,10 @@ bool IntrusiveQueueTest::test_push_duplicate()
 
 	// attempt to insert front again
 	const auto q1_front = q1.front();
-	const auto q1_front_i = q1_front->i; // copy i value
+	// const auto q1_front_i = q1_front->i; // copy i value
 
 	const auto q1_back = q1.back();
-	const auto q1_back_i = q1_back->i; // copy i value
+	// const auto q1_back_i = q1_back->i; // copy i value
 
 	// push front and back aagain
 	q1.push(q1_front);
