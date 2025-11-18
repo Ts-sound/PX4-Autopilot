@@ -295,6 +295,7 @@ void Pxh::run_remote_pxh(int remote_in_fd, int remote_out_fd)
 
 void Pxh::run_pxh()
 {
+	printf("PX4 interactive shell (pxh)\n");
 	// Only the local_terminal needed for static calls
 	_instance = this;
 	_local_terminal = true;

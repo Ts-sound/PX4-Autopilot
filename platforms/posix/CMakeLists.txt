@@ -59,6 +59,7 @@ else()
 		PRIVATE
 			px4_main
 		)
+	install(TARGETS px4_main DESTINATION ${PX4_BINARY_DIR})
 endif()
 
 target_link_libraries(px4

@@ -15,6 +15,12 @@ int main(int argc, char **argv){
 
 printf("start SITL_MAIN");
 
+// print all arguments
+printf("argc: %d\n", argc);
+for (int i = 0; i < argc; i++) {
+    printf("argv[%d]: %s\n", i, argv[i]);
+}
+
 return SITL_MAIN(argc,argv);
 
 #endif
