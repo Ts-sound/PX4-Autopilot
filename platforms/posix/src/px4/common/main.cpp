@@ -393,6 +393,7 @@ int main(int argc, char **argv)
 		ret = run_startup_script(commands_file, absolute_binary_path, instance);
 
 		std::string px4_runpath = getenv("PX4_RUNPATH") ? getenv("PX4_RUNPATH") : "";
+		PX4_INFO("PX4_RUNPATH: %s", px4_runpath.c_str());
 
 		if (ret == 0) {
 			// We now block here until we need to exit.
