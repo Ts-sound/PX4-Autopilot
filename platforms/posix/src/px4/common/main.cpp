@@ -78,6 +78,8 @@
 #include "px4_daemon/client.h"
 #include "px4_daemon/server.h"
 #include "px4_daemon/pxh.h"
+#include "linux_fifo.hpp"
+
 
 #define MODULE_NAME "px4"
 
@@ -113,6 +115,32 @@ static bool file_exists(const std::string &name);
 static std::string file_basename(std::string const &pathname);
 static std::string pwd();
 static int change_directory(const std::string &directory);
+
+// create remote file pxh
+static void run_remote_file_pxh(const std::string &path){
+	std::string remote2px4_fifo = path + "temp/remote2px4_fifo";
+	std::string px42remote_fifo = path + "temp/px42remote_fifo";
+
+	LinuxFifo remote2px4(remote2px4_fifo, O_RDONLY );
+	LinuxFifo px42remote(px42remote_fifo, O_WRONLY );
+	if(!remote2px4.Open()){
+		PX4_ERR("Failed to open remote2px4 fifo at : %s", remote2px4_fifo.c_str());
+		wait_to_exit();
+		return;
+	}
+	if(!px42remote.Open()){
+		PX4_ERR("Failed to open px42remote fifo at : %s", px42remote_fifo.c_str());
+		wait_to_exit();
+		return;
+	}
+
+
+	px4_daemon::Pxh pxh;
+	PX4_INFO("Starting remote pxh on FIFOs [%s , fd:%d] and [%s , fd:%d]",
+		remote2px4_fifo.c_str(),remote2px4.GetFileDescriptor(),
+		px42remote_fifo.c_str(),px42remote.GetFileDescriptor());
+	pxh.run_remote_pxh(remote2px4.GetFileDescriptor(), px42remote.GetFileDescriptor());
+}
 
 
 #ifdef __PX4_SITL_MAIN_OVERRIDE
@@ -364,11 +392,15 @@ int main(int argc, char **argv)
 
 		ret = run_startup_script(commands_file, absolute_binary_path, instance);
 
+		std::string px4_runpath = getenv("PX4_RUNPATH") ? getenv("PX4_RUNPATH") : "";
+
 		if (ret == 0) {
 			// We now block here until we need to exit.
 			if (pxh_off) {
 				wait_to_exit();
 
+			} else if (px4_runpath != "") {
+				run_remote_file_pxh(px4_runpath);
 			} else {
 				px4_daemon::Pxh pxh;
 				pxh.run_pxh();

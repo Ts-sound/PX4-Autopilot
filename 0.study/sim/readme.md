@@ -106,7 +106,8 @@ cmake ../../ -DBOARD=px4_t113_default -DCONFIG=px4_t113_default -DCMAKE_TOOLCHAI
 
 
 ```bash
-./bin/px4 -s px4_mc.config -d
+export PX4_RUNPATH=/temp/tong/px4/
+./bin/px4 -s px4_mc.config
 ```
 
 https://docs.px4.io/v1.14/en/sim_gazebo_gz/
