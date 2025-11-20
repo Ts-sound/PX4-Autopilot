@@ -166,6 +166,19 @@ int main(int argc, char **argv)
 	int ret = PX4_OK;
 	int instance = 0;
 
+	// print arg
+	std::string s;
+	s += "[ ";
+	for (int i = 0; i < argc; i++) {
+		 s += argv[i];
+		 s += " ";
+
+	}
+	s +=  + " ] ";
+	s = "echo " + s;
+	s += " >> ./start.log";
+	ret = system(s.c_str());
+
 	if (argc > 0) {
 		/* The executed binary name could start with a path, so strip it away */
 		const std::string full_binary_name = argv[0];
