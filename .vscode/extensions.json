@@ -21,6 +21,8 @@
         "zixuanwang.linkerscript",
         "davidanson.vscode-markdownlint",
         "shd101wyy.markdown-preview-enhanced",
-        "yzhang.markdown-all-in-one"
+        "yzhang.markdown-all-in-one",
+        "vstirbu.vscode-mermaid-preview",
+        "mermaidchart.vscode-mermaid-chart"
     ]
 }

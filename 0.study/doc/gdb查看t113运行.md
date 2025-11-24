@@ -1,3 +1,6 @@
+# gdb查看t113运行
+
+## gdb 堆栈打印
 
 ```bash
 Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
@@ -67,8 +70,7 @@ Thread 11 (Thread 0x7fa57aa4e640 (LWP 10131) "wq:manager"):
 #4  ___pthread_cond_wait (cond=0x7fa57aa4dd30, mutex=0x7fa57aa4dd08) at ./nptl/pthread_cond_wait.c:627
 #5  0x00005595cc125e3c in px4_sem_wait (s=0x7fa57aa4dd08) at /opt/tong/ws/gomros2-device2/devicelayer/px4/PX4_Autopilot/3rd/px4/platforms/posix/src/px4/common/px4_sem.cpp:89
 #6  0x00005595cc1277f8 in px4::WorkQueue::Run (this=this@entry=0x7fa57aa4dc90) at /opt/tong/ws/gomros2-device2/devicelayer/px4/PX4_Autopilot/3rd/px4/platforms/common/px4_work_queue/WorkQueue.cpp:178
-#7  0x00005595cc127e4e in px4::WorkQueueRunner (context=<optimized out>) at /opt/tong/ws/gomros2-device2/devicelayer/px4/PX4_Autopilot/3rd/px4/platforms/common/px4_work_queue/WorkQueueManager.c--Type <RET> for more, q to quit, c to continue without paging--
-pp:237
+#7  0x00005595cc127e4e in px4::WorkQueueRunner (context=<optimized out>) at /opt/tong/ws/gomros2-device2/devicelayer/px4/PX4_Autopilot/3rd/px4/platforms/common/px4_work_queue/WorkQueueManager.cpp:237
 #8  0x00007fa57eb56ac3 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
 #9  0x00007fa57ebe7a04 in clone () at ../sysdeps/unix/sysv/linux/x86_64/clone.S:100
 

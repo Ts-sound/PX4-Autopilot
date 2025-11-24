@@ -1,0 +1,61 @@
+sequenceDiagram
+    autonumber
+    participant User
+    participant px4
+
+
+    User ->> px4 : ./bin/px4 -s px4_mc.config
+    create participant server as px4_daemon::Server
+    px4 ->> server : create and start
+    server ->> server : listen on local socket (/tmp/px4-sock-[id])
+
+
+    par start server main thread
+    create participant server_main as server_main
+    server ->> server_main :  start thread (run ->_server_main())
+    loop true
+        server_main ->> server_main : poll client event
+
+        create participant handle_client as handle_client
+        server_main ->> handle_client : Start a new thread to handle the client.
+
+        loop true
+            handle_client ->> handle_client : Run the actual command
+            handle_client ->> handle_client : Pxh::process_line(cmd, true);
+
+        end
+
+        server_main ->> server_main :
+
+    end
+
+    and continue px4 main
+
+    px4 ->> px4 : set_server_running(instance);
+    px4 ->> px4 : run_startup_script() , px4_mc.config;
+    px4 ->> px4 : system(shell_command.c_str()) ;
+    Note over px4: shell cmd : '/bin/sh px4_mc.config 0 '
+    participant px4_start_shell as px4_start_shell
+    px4 ->> px4_start_shell : run the shell command px4_mc.config
+
+    create participant px4_c as px4(px4_daemon::client)
+    px4_start_shell ->> px4_c : start px4 client
+    px4_c ->> px4_c : connect to server socket (/tmp/px4-sock-[id])
+    px4_c ->> px4_c : send commands to server
+    px4_c -->> handle_client : commands
+    Note over px4_c: set params : param set SENS_BOARD_ROT 0 <br>  actually run : px4-param --instance 0 set SENS_BOARD_ROT 0
+    Note over px4_c: start module : ekf2 start <br>  actually run : px4-ekf2 --instance 0 start
+
+    alt pxh_off
+        px4 ->> px4 : pxh_off();
+    else
+        Note over px4 : start PX4 shell in terminal
+        px4 ->> px4 : px4_daemonPxh pxh , <br>  pxh.run_pxh();
+        px4 ->> User : wait input
+    end
+
+    end
+
+    Note over User,px4 : User can interact with PX4 shell now.
+    User ->> px4 : px4> param show SENS_BOARD_ROT
+    px4 ->> User : Symbols: x = used, + = saved, * = unsaved <br>  x   SENS_BOARD_ROT [617,1136] : 0

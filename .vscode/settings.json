@@ -129,6 +129,7 @@
                 "${workspaceFolder}/validation/module_schema.yaml": "${workspaceFolder}/src/modules/*/module.yaml"
         },
         "markdownlint.config": {
+                "MD010":false,
                 "MD004": false,
                 "MD029": false,
                 "MD033": false,
@@ -139,4 +140,8 @@
         "[cpp]": {
                 "editor.defaultFormatter": "ms-vscode.cpptools"
         },
+        "preview.mermaidChart.baseUrl": "https://unpkg.com/mermaid@9.0.1/dist/mermaid.min.js",
+        "mermaid-editor.preview.defaultMermaidConfig": "https://cdn.jsdelivr.net/npm/mermaid@10.4.0/dist/mermaid.min.js",
+        "mermaid-editor.generate.quality": 1024,
+        "mermaid-editor.generate.scale": 1024,
 }
