@@ -332,7 +332,7 @@ Thread 1 (Thread 0x7fa57eabd740 (LWP 10010) "px4"):
 (gdb)
 ```
 
-* 线程数量不少，都加了线程名，方便依次分析下：
+* 线程数量不少，不过都加了线程名，方便分析
 
 ### Thread 1 : px4
 
@@ -386,20 +386,81 @@ g_hrt_work.pid = px4_task_spawn_cmd("wkr_hrt",
 					(char *const *)NULL);
 
 ```
-TODO: continue
+
 ### Thread 6 : wq:manager
 
-*
+* workqueue manager , 创建管理 任务队列的
+  * 通过 `WorkQueue *WorkQueueFindOrCreate(const wq_config_t &new_wq);` 添加新的队列 或获取；
+  * 通过 `void WorkQueue::Add(WorkItem *item);` 添加新的任务；
+
+```c++
+/// px4/platforms/common/px4_work_queue/WorkQueueManager.cpp
+
+int task_id = px4_task_spawn_cmd("wq:manager",
+	SCHED_DEFAULT,
+	SCHED_PRIORITY_MAX,
+	PX4_STACK_ADJUSTED(1280),
+	(px4_main_t)&WorkQueueManagerRun,
+	nullptr);
+```
 
 ### Thread 7 : dataman
 
-*
+* dataman 组件,用来数据持久化的 ，`px4/src/modules/dataman/CMakeLists.txt`
+* 以下是模块的介绍：
+  * 该模块通过 C API 提供一种简单数据库形式的持久存储，以供系统的其他部分使用。支持多种后端：
+    * 文件（例如在 SD 卡上）
+    * 内存（显然这不是持久存储）
+  * 用于存储不同类型的结构化数据：任务航点、任务状态和电子围栏多边形。
+  * 每种类型都有特定的数据类型和固定的最大存储条目数量，从而能够实现快速随机访问。
+  * 实现：读取和写入单个条目总是原子的。如果需要原子地读取/修改多个条目，每种条目类型都会通过 `dm_lock` 提供额外的锁
 
-### Thread 8 : wq:lp_default"
+* 使用基本函数 `dm_read(...)` , `dm_write(...)`
+* 实际写入 磁盘IO 是通过线程异步的，避免 磁盘IO 的延迟影响；
 
-*
+```c++
+/// px4/src/modules/dataman/dataman.cpp
 
+/* start the worker thread with low priority for disk IO */
+if ((task = px4_task_spawn_cmd("dataman", SCHED_DEFAULT, SCHED_PRIORITY_DEFAULT - 10,
+				PX4_STACK_ADJUSTED(TASK_STACK_SIZE), task_main,
+				nullptr)) < 0) {
+	px4_sem_destroy(&g_init_sema);
+	PX4_ERR("task start failed");
+	return -1;
+}
+```
 
+### Thread 8-12 ： wq:**
+
+* 以下都是通过 `wq:manager` 管理的队列：
+  * wq:lp_default ：低优先级队列
+  * wq:hp_default ：高优先级队列
+  * wq:ttyS5 ：串口serial 数据处理队列
+  * wq:manager ：这个版本好像没什么作用，搜索 `wq:manager` 没有向这个队列添加任务；
+  * wq:rate_ctrl : 使用该队列组件：`control_allocator`,`mc_rate_control`,`vehicle_angular_velocity`
+
+* 这个应该是新的线程池方案，大部分组件都是通过该线程池接口添加任务的，`hpwork,lpwork` 使用的地方就不多。
+
+### Thread 13: navigator
+
+* 导航组件，贴一下组件描述：
+  * 负责自主飞行模式的模块。这包括任务（从数据管理器读取）、起飞和返航。它还负责检查地理围栏违规。
+  * 实现：不同的内部模式被实现为继承自共同基类 `NavigatorMode` 的独立类。成员 `_navigation_mode` 包含当前激活的模式。
+  * 导航器发布位置设定点三元组（`position_setpoint_triplet_s`），然后由位置控制器使用。
+
+### Thread 14: commander
+
+* 命令组件，给无人机发指令,如：`commander takeoff` , `commander land`, ...
+
+### Thread 15-16: mavlink_if0,mavlink_rcv_if0
+
+* mavlink 组件相关线程；
+* mavlink 是用于地面站通信的轻量级消息协议，负责飞行器与外部系统（如QGroundControl）的通信。
+
+### 小结
+
+* 该px4运行堆栈是基于t113编译对象运行的，其他的可能有差异，因为启动的 module 模块组件不同，但原理都是类似的。
 
 
 ## initialize_fake_px4_once
