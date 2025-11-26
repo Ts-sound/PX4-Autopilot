@@ -462,6 +462,18 @@ if ((task = px4_task_spawn_cmd("dataman", SCHED_DEFAULT, SCHED_PRIORITY_DEFAULT 
 
 * 该px4运行堆栈是基于t113编译对象运行的，其他的可能有差异，因为启动的 module 模块组件不同，但原理都是类似的。
 
+## px4 module组件启动流程(board_adc)
+
+* 以组件 `board_adc` 为例分析
+* `board_adc` 路径 ： `px4/src/drivers/adc/board_adc/CMakeLists.txt`
+
+![](./assets/mermaid/px4组件启动流程.svg)
+
+* 有两个重要的基类： `ModuleBase<ADC>`,  `px4::ScheduledWorkItem`
+  * `ModuleBase<T>`: px4 模块化框架，用来处理组件实例化，销毁，及其他命令行指令；
+  * `px4::ScheduledWorkItem`: 实现定时调度工作项，将当前组件绑定到指定任务队列，并可以配置周期运行 组件的 `void Run() override;`
+* module 都是单例，存在于 `px4_daemon::Server` 所在进程；
+* 启动后，如果组件内部没有创建新的进程，组件的运行是通过`消息`和`绑定的工作队列`进行驱动的。
 
 ## initialize_fake_px4_once
 

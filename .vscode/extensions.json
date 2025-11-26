@@ -23,6 +23,7 @@
         "shd101wyy.markdown-preview-enhanced",
         "yzhang.markdown-all-in-one",
         "vstirbu.vscode-mermaid-preview",
-        "mermaidchart.vscode-mermaid-chart"
+        "mermaidchart.vscode-mermaid-chart",
+        "simonsiefke.svg-preview"
     ]
 }

@@ -1,0 +1,65 @@
+sequenceDiagram
+    autonumber
+
+    participant Server as px4_daemon::Server
+    participant Pxh as px4_daemon::Pxh
+
+
+    note over Server: recv cmd : board_adc start
+    Server ->> Server : read from socket
+    Server ->>+ Pxh : process_line(cmd, true);
+    opt _apps.empty()
+        Pxh ->> Pxh :init_app_map(_apps);
+    end
+    Pxh ->> Pxh : parse cmd
+
+    note over Pxh : run board_adc module entry point
+    opt _apps.find(board_adc)
+        create participant entry as board_adc_main(argc,argv[])
+        Pxh ->> entry : _apps[command](args);
+        note over entry : entry function in src/drivers/adc/board_adc/ADC.cpp
+
+        create participant mod as class ADC
+        entry ->>+ mod : ADC::main(argc, argv)
+
+        create participant modulebase as ModuleBase<ADC>
+        mod ->> modulebase : construct
+        note over modulebase : in platforms/common/include/px4_platform_common/module.h
+
+        create participant sched as ScheduledWorkItem
+        mod ->> sched : ScheduledWorkItem(MODULE_NAME,wq_configurations::hp_default)
+        sched ->> mod : construct end
+        note over mod : now construsted base class ModuleBase<ADC> , ScheduledWorkItem
+
+        mod ->>+ modulebase : {static} ModuleBase::main(int argc, char *argv[])
+        modulebase ->> modulebase : handle command [start] , <br> e.g., start/stop/status
+
+        alt not running
+            modulebase ->>+ mod : T::task_spawn(argc, argv);
+            note over mod,modulebase : now T is ADC
+            mod ->> mod : create instance (singleton)
+            mod ->> mod : (ADC*)instance->init()
+            mod ->> sched : ScheduleOnInterval(kINTERVAL, kINTERVAL);
+            note over mod : start periodic work when queue[hp_default] is running, <br> task is  [ADC::Run()]
+
+            mod ->>- modulebase : return PX4_OK , (success)
+
+            modulebase ->>- mod : return PX4_OK
+        else running
+            modulebase ->> mod : return -1 , Task already running
+
+        end
+
+         mod ->>- entry : return ret
+
+        entry ->> Pxh : return ret
+    end
+
+    Pxh ->> Server : return ret
+
+    note over Server: now module is started (or error with ret!=0)
+    note over Server: send back to client : ret
+
+
+    %% Pxh ->> mod : parse cmd
+    %% Pxh ->>- Server : return value
