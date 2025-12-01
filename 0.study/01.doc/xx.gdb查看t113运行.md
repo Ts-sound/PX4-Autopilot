@@ -221,6 +221,8 @@ Work Queue: 5  threads                          RATE        INTERVAL
     \__ 1) load_mon                           2.0 Hz       499912 us (500000 us)
 ```
 
+---
+
 ## urgb
 
 ```bash
@@ -269,3 +271,5 @@ vehicle_odometry           0    0  1  112 /obj/vehicle_odometry0
 vehicle_status             0   18  1   72 /obj/vehicle_status0
 wind                       0    2  1   48 /obj/wind0
 ```
+
+---
