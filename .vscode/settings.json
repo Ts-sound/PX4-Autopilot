@@ -137,6 +137,8 @@
                 "MD045": false
 
         },
+        "files.autoSave": "onFocusChange",
+        "editor.formatOnSave": true,
         "[cpp]": {
                 "editor.defaultFormatter": "ms-vscode.cpptools"
         },

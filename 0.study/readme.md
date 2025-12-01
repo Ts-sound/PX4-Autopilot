@@ -1,5 +1,7 @@
 
-# 资料
+# 原始资料
+
+* 本项目基于 `https://guanglun.github.io/gldrone/gldrone-t113` 做分析 , px4 版本为 `v1.14.2`。
 
 - T113资料：https://guanglun.github.io/gldrone/gldrone-t113
   - https://github.com/guanglun/PX4-Autopilot
