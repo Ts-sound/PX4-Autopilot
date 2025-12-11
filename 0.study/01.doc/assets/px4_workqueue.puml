@@ -1,0 +1,131 @@
+@startuml
+
+
+
+
+
+/' Objects '/
+
+namespace px4 {
+	abstract class ScheduledWorkItem {
+		#ScheduledWorkItem(const char* name, const wq_config_t& config)
+		#~ScheduledWorkItem()
+		+Scheduled() : bool
+		-_call : hrt_call
+		-{abstract} Run() : void
+		+ScheduleAt(hrt_abstime time_us) : void
+		+ScheduleClear() : void
+		+ScheduleDelayed(uint32_t delay_us) : void
+		+ScheduleOnInterval(uint32_t interval_us, uint32_t delay_us) : void
+		#print_run_status() : void
+		-{static} schedule_trampoline(void* arg) : void
+	}
+
+	abstract class WorkItem {
+		#WorkItem(const char* name, const wq_config_t& config)
+		#WorkItem(const char* name, const WorkItem& work_item)
+		#~WorkItem()
+		-_wq : WorkQueue*
+		+ChangeWorkQueue(const wq_config_t& config) : bool
+		#Init(const wq_config_t& config) : bool
+		+operator<=(const WorkItem& rhs) : bool {query}
+		+ItemName() : char* {query}
+		#_item_name : const char*
+		#average_interval() : float {query}
+		#average_rate() : float {query}
+		#elapsed_time() : float {query}
+		#_time_first_run : hrt_abstime
+		#_run_count : uint32_t
+		#Deinit() : void
+		#Run() : void
+		#{abstract} Run() : void
+		#RunPreamble() : void
+		#ScheduleClear() : void
+		+ScheduleNow() : void
+		+print_run_status() : void
+	}
+
+	class WorkItemSingleShot {
+		+WorkItemSingleShot(const px4::wq_config_t& config, void (* ) ( void* arg ) method, void* argument)
+		+WorkItemSingleShot(const px4::WorkItem& work_item, void (* ) ( void* arg ) method, void* argument)
+		+~WorkItemSingleShot()
+		-_sem : px4_sem_t
+		#Run() : void
+		+wait() : void
+		-_method : void (* ) ( void* arg )
+		-_argument : void*
+	}
+
+	class WorkQueue {
+		+WorkQueue(const wq_config_t& wq_config)
+		+~WorkQueue()
+		-_work_items : BlockingList<WorkItem*>
+		-_q : IntrusiveQueue<WorkItem*>
+		+Attach(WorkItem* item) : bool
+		+operator<=(const WorkQueue& rhs) : bool {query}
+		-should_exit() : bool {query}
+		+get_name() : char* {query}
+		-_config : const wq_config_t&
+		-_lockstep_component : int
+		-_flags : irqstate_t
+		-_should_exit : px4::atomic_bool
+		-_exit_lock : px4_sem_t
+		-_process_lock : px4_sem_t
+		-_qlock : px4_sem_t
+		+Add(WorkItem* item) : void
+		+Clear() : void
+		+Detach(WorkItem* item) : void
+		+Remove(WorkItem* item) : void
+		+Run() : void
+		-SignalWorkerThread() : void
+		+print_status(bool last) : void
+		+request_stop() : void
+		-work_lock() : void
+		-work_lock() : void
+		-work_unlock() : void
+		-work_unlock() : void
+		+get_config() : wq_config_t& {query}
+	}
+
+	class wq_config_t {
+		+name : const char*
+		+relative_priority : int8_t
+		+stacksize : uint16_t
+	}
+}
+
+
+
+
+
+/' Inheritance relationships '/
+
+px4.WorkItem <|-- px4.ScheduledWorkItem
+
+
+px4.WorkItem <|-- px4.WorkItemSingleShot
+
+
+
+
+
+/' Aggregation relationships '/
+
+px4.WorkItem o-- px4.WorkQueue
+
+
+px4.WorkQueue "2" o-- px4.WorkItem
+
+
+px4.WorkQueue *-- px4.wq_config_t
+
+
+
+
+
+
+/' Nested objects '/
+
+
+
+@enduml
