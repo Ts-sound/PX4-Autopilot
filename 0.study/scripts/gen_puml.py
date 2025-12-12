@@ -50,6 +50,14 @@ def gen_workqueue():
     return
 
 
+def gen_uORB():
+    ifile_path = workpath + "/platforms/common/uORB"
+    input_files = glob.glob(ifile_path + "/*.hpp")
+    output_file = workpath + "/0.study/01.doc/assets/px4_uORB.puml"
+    gen_puml(input_files, output_file)
+    return
+
+
 if __name__ == "__main__":
     # parser = argparse.ArgumentParser(description="Generate PlantUML diagrams from C++ header files.")
     # parser.add_argument(
@@ -63,3 +71,4 @@ if __name__ == "__main__":
     # if args.workqueue:
 
     gen_workqueue()
+    gen_uORB()

@@ -1,0 +1,507 @@
+@startuml
+
+
+
+
+
+/' Objects '/
+
+class ORBSet {
+}
+
+
+class uORB::DeviceMaster {
+	-DeviceMaster()
+	-~DeviceMaster()
+	-_node_exists : AtomicBitset<ORB_TOPICS_COUNT>[]
+	-_node_list : IntrusiveSortedList<uORB::DeviceNode*>
+	+deviceNodeExists(ORB_ID id, const uint8_t instance) : bool
+	-addNewDeviceNodes(DeviceNodeStatisticsData first_node, int& num_topics, size_t& max_topic_name_length, char** topic_filter, int num_filters) : int
+	+advertise(const struct orb_metadata* meta, bool is_advertiser, int* instance) : int
+	-_lock : px4_sem_t
+	+getDeviceNode(const char* node_name) : uORB::DeviceNode*
+	+getDeviceNode(const struct orb_metadata* meta, const uint8_t instance) : uORB::DeviceNode*
+	-getDeviceNodeLocked(const struct orb_metadata* meta, const uint8_t instance) : uORB::DeviceNode*
+	-lock() : void
+	+printStatistics() : void
+	+showTop(char** topic_filter, int num_filters) : void
+	-unlock() : void
+}
+
+
+class uORB::DeviceNode {
+	+DeviceNode(const struct orb_metadata* meta, const uint8_t instance, const char* path, uint8_t queue_size)
+	+~DeviceNode()
+	-_callbacks : List<uORB::SubscriptionCallback*>
+	+id() : ORB_ID {query}
+	-_advertised : bool
+	-_data_valid : bool
+	+copy(void* dst, unsigned& generation) : bool
+	+is_advertised() : bool {query}
+	-{static} is_in_range(unsigned left, unsigned value, unsigned right) : bool
+	+operator<=(const DeviceNode& rhs) : bool {query}
+	+print_statistics(int max_topic_length) : bool
+	+register_callback(SubscriptionCallback* callback_sub) : bool
+	+get_name() : char* {query}
+	-_meta : const orb_metadata*
+	-_instance : const uint8_t
+	- : friend uORBTest::UnitTest
+	+close(cdev::file_t* filp) : int
+	+ioctl(cdev::file_t* filp, int cmd, unsigned long arg) : int
+	+open(cdev::file_t* filp) : int
+	+{static} unadvertise(orb_advert_t handle) : int
+	+update_queue_size(unsigned int queue_size) : int
+	+process_add_subscription() : int16_t
+	+process_received_message(int32_t length, uint8_t* data) : int16_t
+	+process_remove_subscription() : int16_t
+	+{static} topic_advertised(const orb_metadata* meta) : int16_t
+	-_subscriber_count : int8_t
+	+subscriber_count() : int8_t {query}
+	+get_meta() : orb_metadata* {query}
+	-_generation : px4::atomic<unsigned>
+	#poll_state(cdev::file_t* filp) : px4_pollevent_t
+	+{static} publish(const orb_metadata* meta, orb_advert_t handle, const void* data) : ssize_t
+	+read(cdev::file_t* filp, char* buffer, size_t buflen) : ssize_t
+	+write(cdev::file_t* filp, const char* buffer, size_t buflen) : ssize_t
+	-_queue_size : uint8_t
+	+get_instance() : uint8_t {query}
+	+get_queue_size() : uint8_t {query}
+	-_data : uint8_t*
+	+get_initial_generation() : unsigned
+	+updates_available(unsigned generation) : unsigned {query}
+	+add_internal_subscriber() : void
+	+mark_as_advertised() : void
+	#poll_notify_one(px4_pollfd_struct_t* fds, px4_pollevent_t events) : void
+	+remove_internal_subscriber() : void
+	+unregister_callback(SubscriptionCallback* callback_sub) : void
+}
+
+
+class uORB::Manager {
+	-Manager()
+	-~Manager()
+	-_device_master : DeviceMaster*
+	-_remote_topics : ORBSet
+	-_publisher_rule : PublisherRule
+	-_has_publisher_rules : bool
+	-findTopic(PublisherRule rule, const char* topic_name) : bool
+	+{static} initialize() : bool
+	+{static} is_advertised(const void* node_handle) : bool
+	+{static} is_advertised(const void* node_handle) : bool
+	+{static} orb_data_copy(void* node_handle, void* dst, unsigned& generation, bool only_if_updated) : bool
+	+{static} orb_device_node_exists(ORB_ID orb_id, uint8_t instance) : bool
+	+{static} register_callback(void* node_handle, SubscriptionCallback* callback_sub) : bool
+	-startsWith(const char* pre, const char* str) : bool
+	+{static} terminate() : bool
+	-node_open(const struct orb_metadata* meta, bool advertiser, int* instance) : int
+	+orb_check(int handle, bool* updated) : int
+	+orb_copy(const struct orb_metadata* meta, int handle, void* buffer) : int
+	+orb_exists(const struct orb_metadata* meta, int instance) : int
+	+orb_get_interval(int handle, unsigned* interval) : int
+	+{static} orb_ioctl(unsigned int cmd, unsigned long arg) : int
+	+{static} orb_publish(const struct orb_metadata* meta, orb_advert_t handle, const void* data) : int
+	+orb_set_interval(int handle, unsigned interval) : int
+	+orb_subscribe(const struct orb_metadata* meta) : int
+	+orb_subscribe_multi(const struct orb_metadata* meta, unsigned instance) : int
+	+{static} orb_unadvertise(orb_advert_t handle) : int
+	+orb_unsubscribe(int handle) : int
+	-readPublisherRulesFromFile(const char* file_name, PublisherRule rule) : int
+	-process_add_subscription(const char* messageName) : int16_t
+	-process_received_message(const char* messageName, int32_t length, uint8_t* data) : int16_t
+	-process_remote_topic(const char* topic_name) : int16_t
+	-process_remove_subscription(const char* messageName) : int16_t
+	+orb_advertise(const struct orb_metadata* meta, const void* data, unsigned int queue_size) : orb_advert_t
+	+orb_advertise_multi(const struct orb_metadata* meta, const void* data, int* instance, unsigned int queue_size) : orb_advert_t
+	-{static} _Instance : static Manager*
+	-{static} _communicator_mutex : static pthread_mutex_t
+	+get_device_master() : uORB::DeviceMaster*
+	+{static} get_instance() : uORB::Manager*
+	-_comm_channel : uORBCommunicator::IChannel*
+	+get_uorb_communicator() : uORBCommunicator::IChannel*
+	+{static} orb_get_instance(const void* node_handle) : uint8_t
+	+{static} orb_get_queue_size(const void* node_handle) : uint8_t
+	+{static} updates_available(const void* node_handle, unsigned last_generation) : unsigned
+	+{static} updates_available(const void* node_handle, unsigned last_generation) : unsigned
+	+{static} orb_remove_internal_subscriber(void* node_handle) : void
+	+set_uorb_communicator(uORBCommunicator::IChannel* comm_channel) : void
+	-strTrim(const char** str) : void
+	+{static} unregister_callback(void* node_handle, SubscriptionCallback* callback_sub) : void
+	+{static} orb_add_internal_subscriber(ORB_ID orb_id, uint8_t instance, unsigned* initial_generation) : void*
+}
+
+
+class uORB::Utils {
+	+{static} node_mkpath(char* buf, const struct orb_metadata* meta, int* instance) : int
+	+{static} node_mkpath(char* buf, const char* orbMsgName) : int
+}
+
+
+abstract class uORBCommunicator::IChannel {
+	+{abstract} add_subscription(const char* messageName, int32_t msgRateInHz) : int16_t
+	+{abstract} register_handler(uORBCommunicator::IChannelRxHandler* handler) : int16_t
+	+{abstract} remove_subscription(const char* messageName) : int16_t
+	+{abstract} send_message(const char* messageName, int32_t length, uint8_t* data) : int16_t
+	+{abstract} topic_advertised(const char* messageName) : int16_t
+}
+
+
+abstract class uORBCommunicator::IChannelRxHandler {
+	+{abstract} process_add_subscription(const char* messageName) : int16_t
+	+{abstract} process_received_message(const char* messageName, int32_t length, uint8_t* data) : int16_t
+	+{abstract} process_remote_topic(const char* topic_name) : int16_t
+	+{abstract} process_remove_subscription(const char* messageName) : int16_t
+}
+
+
+enum orbiocdevmastercmd_t {
+	ORB_DEVMASTER_STATUS
+	ORB_DEVMASTER_TOP
+}
+
+
+class ORBSet::Node {
+	+ORBSet()
+	+~ORBSet()
+	-_end : Node
+	-_top : Node
+	+next : Node
+	+erase(const char* node_name) : bool
+	+find(const char* node_name) : bool
+	+node_name : const char*
+	+insert(const char* node_name) : void
+	-unlinkNext(Node a) : void
+}
+
+
+class orbiocdevaddsubscriber_t {
+	+orb_id : const ORB_ID
+	+instance : const uint8_t
+	+initial_generation : unsigned*
+	+handle : void*
+}
+
+
+class orbiocdevadvertise_t {
+	+is_advertiser : bool
+	+meta : const struct orb_metadata*
+	+ret : int
+	+instance : int*
+}
+
+
+class orbiocdevdatacopy_t {
+	+only_if_updated : bool
+	+ret : bool
+	+generation : unsigned
+	+dst : void*
+	+handle : void*
+}
+
+
+class orbiocdevexists_t {
+	+orb_id : const ORB_ID
+	+check_advertised : const bool
+	+instance : const uint8_t
+	+ret : int
+}
+
+
+class orbiocdevgetinstance_t {
+	+handle : const void*
+	+instance : uint8_t
+}
+
+
+class orbiocdevisadvertised_t {
+	+ret : bool
+	+handle : const void*
+}
+
+
+class orbiocdevpublish_t {
+	+meta : const struct orb_metadata*
+	+data : const void*
+	+ret : int
+	+handle : orb_advert_t
+}
+
+
+class orbiocdevqueuesize_t {
+	+handle : const void*
+	+size : uint8_t
+}
+
+
+class orbiocdevregcallback_t {
+	+registered : bool
+	+callback_sub : class uORB::SubscriptionCallback*
+	+handle : void*
+}
+
+
+class orbiocdevunadvertise_t {
+	+ret : int
+	+handle : void*
+}
+
+
+class orbiocdevunregcallback_t {
+	+callback_sub : class uORB::SubscriptionCallback*
+	+handle : void*
+}
+
+
+class orbiocdevupdatesavail_t {
+	+handle : const void*
+	+last_generation : unsigned
+	+ret : unsigned
+}
+
+
+class uORB::DeviceMaster::DeviceNodeStatisticsData {
+	+node : DeviceNode*
+	+next : DeviceNodeStatisticsData
+	+last_pub_msg_count : unsigned int
+	+pub_msg_delta : unsigned int
+}
+
+
+class uORB::Manager::PublisherRule {
+	+ignore_other_topics : bool
+	+module_name : const char*
+	+topics : const char**
+}
+
+
+namespace uORB {
+	class DefaultQueueSize <template<typename U>> {
+		+{static} value : static constexpr unsigned
+		-{static} get_queue_size(decltype ( T::ORB_QUEUE_LENGTH )*) : uint8_t
+		-{static} get_queue_size() : uint8_t
+	}
+
+	class PublicationBase {
+		#PublicationBase(ORB_ID id)
+		#~PublicationBase()
+		+advertised() : bool {query}
+		+unadvertise() : bool
+		#_orb_id : const ORB_ID
+		#_handle : orb_advert_t
+		+get_topic() : orb_id_t {query}
+	}
+
+	class PublicationBase::Publication <template<typename T, uint8_t ORB_QSIZE=DefaultQueueSize<T>::value>> {
+		+Publication(ORB_ID id)
+		+Publication(const orb_metadata* meta)
+		+advertise() : bool
+		+publish(const T& data) : bool
+	}
+
+	class PublicationBase::PublicationData <template<typename T>> {
+		+PublicationData(ORB_ID id)
+		+PublicationData(const orb_metadata* meta)
+		-_data : T
+		+get() : T&
+		+update() : bool
+		+update(const T& data) : bool
+		+set(const T& data) : void
+	}
+
+	class PublicationMulti <template<typename T, uint8_t QSIZE=DefaultQueueSize<T>::value>> {
+		+PublicationMulti(ORB_ID id)
+		+PublicationMulti(const orb_metadata* meta)
+		+advertise() : bool
+		+publish(const T& data) : bool
+		+get_instance() : int
+	}
+
+	class PublicationMultiData <template<typename T>> {
+		+PublicationMultiData(ORB_ID id)
+		+PublicationMultiData(const orb_metadata* meta)
+		-_data : T
+		+get() : T&
+		+update() : bool
+		+update(const T& data) : bool
+		+set(const T& data) : void
+	}
+
+	class Subscription {
+		+Subscription(ORB_ID id, uint8_t instance)
+		+Subscription(const orb_metadata* meta, uint8_t instance)
+		+Subscription(const Subscription& other)
+		+Subscription(const Subscription&& other)
+		+~Subscription()
+		#_orb_id : ORB_ID
+		+orb_id() : ORB_ID {query}
+		+operator=(const Subscription& other) : Subscription&
+		+operator=(Subscription&& other) : Subscription&
+		+ChangeInstance(uint8_t instance) : bool
+		+advertised() : bool
+		+copy(void* dst) : bool
+		+subscribe() : bool
+		+update(void* dst) : bool
+		+updated() : bool
+		+valid() : bool {query}
+		+get_topic() : orb_id_t {query}
+		#_instance : uint8_t
+		+get_instance() : uint8_t {query}
+		#_last_generation : unsigned
+		+get_last_generation() : unsigned {query}
+		+unsubscribe() : void
+		#_node : void*
+		#get_node() : void*
+	}
+
+	class Subscription::SubscriptionData <template<class T>> {
+		+SubscriptionData(ORB_ID id, uint8_t instance)
+		+SubscriptionData(const orb_metadata* meta, uint8_t instance)
+		+~SubscriptionData()
+		-_data : T
+		+get() : T& {query}
+		+update() : bool
+	}
+
+	class SubscriptionBlocking <template<typename T>> {
+		+SubscriptionBlocking(const orb_metadata* meta, uint32_t interval_us, uint8_t instance)
+		+~SubscriptionBlocking()
+		+updateBlocking(T& data, uint32_t timeout_us) : bool
+		+updatedBlocking(uint32_t timeout_us) : bool
+		-_cv : pthread_cond_t
+		-_mutex : pthread_mutex_t
+		+call() : void
+	}
+
+	abstract class SubscriptionCallback {
+		+SubscriptionCallback(const orb_metadata* meta, uint32_t interval_us, uint8_t instance)
+		+~SubscriptionCallback()
+		+ChangeInstance(uint8_t instance) : bool
+		#_registered : bool
+		+registerCallback() : bool
+		+registered() : bool {query}
+		+{abstract} call() : void
+		+unregisterCallback() : void
+	}
+
+	class SubscriptionCallback::SubscriptionCallbackWorkItem {
+		+SubscriptionCallbackWorkItem(px4::WorkItem* work_item, const orb_metadata* meta, uint8_t instance)
+		+~SubscriptionCallbackWorkItem()
+		-_work_item : px4::WorkItem*
+		-_required_updates : uint8_t
+		+call() : void
+		+set_required_updates(uint8_t required_updates) : void
+	}
+
+	class SubscriptionInterval {
+		+SubscriptionInterval(ORB_ID id, uint32_t interval_us, uint8_t instance)
+		+SubscriptionInterval(const orb_metadata* meta, uint32_t interval_us, uint8_t instance)
+		+SubscriptionInterval()
+		+~SubscriptionInterval()
+		#_subscription : Subscription
+		+advertised() : bool
+		+copy(void* dst) : bool
+		+subscribe() : bool
+		+update(void* dst) : bool
+		+updated() : bool
+		+valid() : bool {query}
+		+get_topic() : orb_id_t {query}
+		#_interval_us : uint32_t
+		+get_interval_us() : uint32_t {query}
+		#_last_update : uint64_t
+		+get_instance() : uint8_t {query}
+		+get_last_generation() : unsigned {query}
+		+set_interval_ms(uint32_t interval) : void
+		+set_interval_us(uint32_t interval) : void
+		+set_last_update(hrt_abstime t) : void
+		+unsubscribe() : void
+	}
+
+	class SubscriptionMultiArray <template<typename T, uint8_t SIZE=ORB_MULTI_MAX_INSTANCES>> {
+		+SubscriptionMultiArray(ORB_ID id)
+		+~SubscriptionMultiArray()
+		+operator[](int i) : Subscription&
+		+operator[](int i) : Subscription& {query}
+		+begin() : Subscription*
+		+begin() : Subscription* {query}
+		+end() : Subscription*
+		+end() : Subscription* {query}
+		-_subscriptions : Subscription[]
+		+advertised() : bool
+		+updated() : bool
+		+advertised_count() : uint8_t
+		+{static} size() : uint8_t
+	}
+
+	class orb_advertdata {
+		+meta : const struct orb_metadata*
+		+instance : int*
+	}
+}
+
+
+
+
+
+/' Inheritance relationships '/
+
+uORB.PublicationBase <|-- uORB.PublicationBase::Publication
+
+
+uORB.PublicationBase <|-- uORB.PublicationMulti
+
+
+uORB.PublicationMulti <|-- uORB.PublicationMultiData
+
+
+uORB.Subscription <|-- uORB.Subscription::SubscriptionData
+
+
+uORB.SubscriptionCallback <|-- uORB.SubscriptionBlocking
+
+
+uORB.SubscriptionCallback <|-- uORB.SubscriptionCallback::SubscriptionCallbackWorkItem
+
+
+uORB.SubscriptionInterval <|-- uORB.SubscriptionCallback
+
+
+
+
+
+/' Aggregation relationships '/
+
+uORB.SubscriptionInterval *-- uORB.Subscription
+
+
+uORB.SubscriptionMultiArray *-- uORB.Subscription
+
+
+uORB::DeviceNode o-- uORB.SubscriptionCallback
+
+
+uORB::Manager *-- ORBSet
+
+
+
+
+
+
+/' Nested objects '/
+
+ORBSet +-- ORBSet::Node
+
+
+uORB.PublicationBase +-- uORB.PublicationBase.Publication
+
+
+uORB.PublicationBase +-- uORB.PublicationBase.PublicationData
+
+
+uORB.Subscription +-- uORB.Subscription.SubscriptionData
+
+
+uORB.SubscriptionCallback +-- uORB.SubscriptionCallback.SubscriptionCallbackWorkItem
+
+
+
+
+@enduml
